@@ -141,10 +141,15 @@ public class RagdollController : MonoBehaviour
 
         if (mainRigidbody != null)
         {
-            mainRigidbody.isKinematic = true;
             mainRigidbody.useGravity = false;
+
+            if (mainRigidbody.isKinematic)
+                mainRigidbody.isKinematic = false;
+            
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
+            
+            mainRigidbody.isKinematic = true;
             mainRigidbody.position = cachedTransform.position;
             mainRigidbody.rotation = cachedTransform.rotation;
             mainRigidbody.Sleep();
@@ -199,10 +204,11 @@ public class RagdollController : MonoBehaviour
         for (int i = 0; i < ragdollRigidbodies.Length; i++)
         {
             Rigidbody rb = ragdollRigidbodies[i];
+
+            rb.isKinematic = false;
+            rb.useGravity = enabled;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
-            rb.useGravity = enabled;
-            rb.isKinematic = !enabled;
         }
 
         for (int i = 0; i < ragdollColliders.Length; i++)
