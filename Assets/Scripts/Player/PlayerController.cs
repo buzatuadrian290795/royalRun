@@ -1,22 +1,65 @@
 using UnityEngine;
 using UnityEngine.InputSystem.EnhancedTouch;
-using UnityEngine.InputSystem;
 
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] float moveSpeed = 5f;
-    [SerializeField] float xClamp = 3f;
+    [SerializeField] float laneChangeDuration = 0.25f;
+    [SerializeField] float[] lanePositions = { -3f, 0f, 3f };
+    [SerializeField] Animator animator;
 
-    float horizontalInput;
-    float fixedZPosition;
     Rigidbody rigidBody;
+    Transform cachedTransform;
+    float fixedZPosition;
+    float halfScreenWidth;
+
+    int currentLane = 1;
+
+    bool isChangingLane;
+    float laneChangeTimer;
+    float startX;
+    float targetX;
 
     private void Awake()
     {
-        rigidBody = GetComponent<Rigidbody>();
+        cachedTransform = transform;
+
+        if (rigidBody == null)
+            rigidBody = GetComponent<Rigidbody>();
+
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+        if (rigidBody == null)
+        {
+            Debug.LogError("PlayerController: Rigidbody not found.");
+            enabled = false;
+            return;
+        }
+
+        if (animator == null)
+        {
+            Debug.LogError("PlayerController: Animator not found.");
+        }
+
+        if (lanePositions == null || lanePositions.Length != 3)
+        {
+            Debug.LogError("PlayerController: lanePositions must contain exactly 3 values.");
+            enabled = false;
+            return;
+        }
+
         fixedZPosition = rigidBody.position.z;
+        halfScreenWidth = Screen.width * 0.5f;
+
+        currentLane = Mathf.Clamp(currentLane, 0, lanePositions.Length - 1);
+        targetX = lanePositions[currentLane];
+
+        Vector3 startPosition = rigidBody.position;
+        startPosition.x = targetX;
+        startPosition.z = fixedZPosition;
+        rigidBody.position = startPosition;
 
         EnhancedTouchSupport.Enable();
         TouchSimulation.Enable();
@@ -35,41 +78,109 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        HandleMovement();
+        HandleLaneChangeMovement();
     }
 
     private void ReadInput()
     {
-        horizontalInput = 0f;
+        if (isChangingLane)
+            return;
 
-        if (Touch.activeTouches.Count > 0)
+        for (int i = 0; i < Touch.activeTouches.Count; i++)
         {
-            Touch touch = Touch.activeTouches[0];
+            Touch touch = Touch.activeTouches[i];
 
-            if (touch.phase == UnityEngine.InputSystem.TouchPhase.Began ||
-                touch.phase == UnityEngine.InputSystem.TouchPhase.Moved ||
-                touch.phase == UnityEngine.InputSystem.TouchPhase.Stationary)
-            {
-                Vector2 touchPosition = touch.screenPosition;
+            if (touch.phase != UnityEngine.InputSystem.TouchPhase.Began)
+                continue;
 
-                if (touchPosition.x < Screen.width / 2f)
-                    horizontalInput = -1f;
-                else
-                    horizontalInput = 1f;
-            }
-            Debug.Log("Touch pos: " + touch.screenPosition + " Screen width: " + Screen.width);
+            if (touch.screenPosition.x < halfScreenWidth)
+                TryMoveLeft();
+            else
+                TryMoveRight();
+
+            return;
         }
     }
 
-    private void HandleMovement()
+    private void TryMoveLeft()
     {
-        Vector3 currentPosition = rigidBody.position;
-        Vector3 moveDirection = new Vector3(horizontalInput, 0f, 0f);
-        Vector3 newPosition = currentPosition + moveDirection * moveSpeed * Time.fixedDeltaTime;
+        if (currentLane <= 0)
+            return;
 
-        newPosition.x = Mathf.Clamp(newPosition.x, -xClamp, xClamp);
-        newPosition.z = fixedZPosition;
+        StartLaneChange(currentLane - 1);
+    }
 
-        rigidBody.MovePosition(newPosition);
+    private void TryMoveRight()
+    {
+        if (currentLane >= lanePositions.Length - 1)
+            return;
+
+        StartLaneChange(currentLane + 1);
+    }
+
+    private void StartLaneChange(int newLane)
+    {
+        if (newLane == currentLane)
+            return;
+
+        isChangingLane = true;
+        laneChangeTimer = 0f;
+        startX = rigidBody.position.x;
+        targetX = lanePositions[newLane];
+        currentLane = newLane;
+
+        if (animator != null)
+            animator.SetBool("IsJumping", true);
+    }
+
+    private void HandleLaneChangeMovement()
+    {
+        if (!isChangingLane)
+            return;
+
+        laneChangeTimer += Time.fixedDeltaTime;
+
+        float duration = laneChangeDuration > 0f ? laneChangeDuration : 0.0001f;
+        float t = laneChangeTimer / duration;
+
+        if (t >= 1f)
+        {
+            t = 1f;
+            isChangingLane = false;
+        }
+
+        Vector3 position = rigidBody.position;
+        position.x = Mathf.Lerp(startX, targetX, t);
+        position.z = fixedZPosition;
+
+        rigidBody.MovePosition(position);
+
+        if (!isChangingLane && animator != null)
+            animator.SetBool("IsJumping", false);
+    }
+
+    public void SetLaneInstant(int laneIndex)
+    {
+        laneIndex = Mathf.Clamp(laneIndex, 0, lanePositions.Length - 1);
+
+        currentLane = laneIndex;
+        targetX = lanePositions[currentLane];
+        startX = targetX;
+        laneChangeTimer = 0f;
+        isChangingLane = false;
+
+        Vector3 position = rigidBody.position;
+        position.x = targetX;
+        position.z = fixedZPosition;
+
+        rigidBody.position = position;
+
+        if (animator != null)
+            animator.SetBool("IsJumping", false);
+    }
+
+    public int GetCurrentLane()
+    {
+        return currentLane;
     }
 }

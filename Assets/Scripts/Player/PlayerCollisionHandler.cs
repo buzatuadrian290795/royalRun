@@ -29,12 +29,12 @@ public class PlayerCollisionHandler : MonoBehaviour
         obstacleLayer = LayerMask.NameToLayer("Obstacle");
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (!isInvulnerable) return;
 
-        invulnerabilityTimer -= Time.deltaTime;
-        blinkTimer -= Time.deltaTime;
+        invulnerabilityTimer -= Time.fixedDeltaTime;
+        blinkTimer -= Time.fixedDeltaTime;
 
         if (blinkTimer <= 0f)
         {

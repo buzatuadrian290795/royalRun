@@ -6,11 +6,13 @@ public class RagdollController : MonoBehaviour
     [SerializeField] Rigidbody mainRigidbody;
     [SerializeField] Collider mainCollider;
     [SerializeField] PlayerController playerMovementScript;
+    [SerializeField] PlayerCollisionHandler collisionHandler;
     [SerializeField] float respawnDelay = 2f;
     [SerializeField] Transform spawnPoint;
 
     Rigidbody[] ragdollRigidbodies;
     Collider[] ragdollColliders;
+    Transform cachedTransform;
 
     bool isRagdollActive;
     bool respawnScheduled;
@@ -20,36 +22,92 @@ public class RagdollController : MonoBehaviour
 
     private void Awake()
     {
-        ragdollRigidbodies = GetComponentsInChildren<Rigidbody>(true);
-        ragdollColliders = GetComponentsInChildren<Collider>(true);
+        cachedTransform = transform;
+
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+        if (mainRigidbody == null)
+            mainRigidbody = GetComponent<Rigidbody>();
+
+        if (mainCollider == null)
+            mainCollider = GetComponent<Collider>();
+
+        if (playerMovementScript == null)
+            playerMovementScript = GetComponent<PlayerController>();
+
+        if (collisionHandler == null)
+            collisionHandler = GetComponent<PlayerCollisionHandler>();
+
+        CacheRagdollParts();
 
         if (spawnPoint != null)
-        {
-            transform.position = spawnPoint.position;
-            transform.rotation = spawnPoint.rotation;
-        }
+            cachedTransform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
 
         DisableRagdollImmediate();
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
-        if (!respawnScheduled) return;
+        if (!respawnScheduled)
+            return;
 
-        respawnTimer -= Time.deltaTime;
+        respawnTimer -= Time.fixedDeltaTime;
 
-        if (respawnTimer <= 0f)
+        if (respawnTimer > 0f)
+            return;
+
+        respawnTimer = 0f;
+        respawnScheduled = false;
+        Respawn();
+    }
+
+    private void CacheRagdollParts()
+    {
+        Rigidbody[] allRigidbodies = GetComponentsInChildren<Rigidbody>(true);
+        Collider[] allColliders = GetComponentsInChildren<Collider>(true);
+
+        int ragdollRbCount = 0;
+        for (int i = 0; i < allRigidbodies.Length; i++)
         {
-            respawnScheduled = false;
-            Respawn();
+            if (allRigidbodies[i] != null && allRigidbodies[i] != mainRigidbody)
+                ragdollRbCount++;
+        }
+
+        ragdollRigidbodies = new Rigidbody[ragdollRbCount];
+        int rbIndex = 0;
+        for (int i = 0; i < allRigidbodies.Length; i++)
+        {
+            Rigidbody rb = allRigidbodies[i];
+            if (rb != null && rb != mainRigidbody)
+                ragdollRigidbodies[rbIndex++] = rb;
+        }
+
+        int ragdollColCount = 0;
+        for (int i = 0; i < allColliders.Length; i++)
+        {
+            if (allColliders[i] != null && allColliders[i] != mainCollider)
+                ragdollColCount++;
+        }
+
+        ragdollColliders = new Collider[ragdollColCount];
+        int colIndex = 0;
+        for (int i = 0; i < allColliders.Length; i++)
+        {
+            Collider col = allColliders[i];
+            if (col != null && col != mainCollider)
+                ragdollColliders[colIndex++] = col;
         }
     }
 
     public void EnableRagdoll()
     {
-        if (isRagdollActive) return;
+        if (isRagdollActive)
+            return;
 
         isRagdollActive = true;
+        respawnScheduled = true;
+        respawnTimer = respawnDelay;
 
         if (animator != null)
             animator.enabled = false;
@@ -64,70 +122,34 @@ public class RagdollController : MonoBehaviour
         {
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
-            mainRigidbody.isKinematic = true;
             mainRigidbody.useGravity = false;
+            mainRigidbody.isKinematic = true;
         }
 
-        foreach (Rigidbody rb in ragdollRigidbodies)
-        {
-            if (rb == null || rb == mainRigidbody) continue;
-
-            rb.isKinematic = false;
-            rb.useGravity = true;
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-        }
-
-        foreach (Collider col in ragdollColliders)
-        {
-            if (col == null || col == mainCollider) continue;
-            col.enabled = true;
-        }
-
-        respawnTimer = respawnDelay;
-        respawnScheduled = true;
+        SetRagdollState(true);
     }
 
     private void Respawn()
     {
-        // 1. oprește ragdoll total
-        foreach (Rigidbody rb in ragdollRigidbodies)
-        {
-            if (rb == null || rb == mainRigidbody) continue;
+        SetRagdollState(false);
 
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            rb.useGravity = false;
-            rb.isKinematic = true;
-        }
-
-        foreach (Collider col in ragdollColliders)
-        {
-            if (col == null || col == mainCollider) continue;
-            col.enabled = false;
-        }
-
-        // 2. mută playerul exact la spawn
         if (spawnPoint != null)
         {
-            transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+            cachedTransform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
             Physics.SyncTransforms();
         }
 
-        // 3. resetează rigidbody-ul principal
         if (mainRigidbody != null)
         {
-            mainRigidbody.isKinematic = false;
+            mainRigidbody.isKinematic = true;
             mainRigidbody.useGravity = false;
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
-            mainRigidbody.position = transform.position;
-            mainRigidbody.rotation = transform.rotation;
-            mainRigidbody.isKinematic = true;
+            mainRigidbody.position = cachedTransform.position;
+            mainRigidbody.rotation = cachedTransform.rotation;
             mainRigidbody.Sleep();
         }
 
-        // 4. repornește corpul principal
         if (mainCollider != null)
             mainCollider.enabled = true;
 
@@ -137,7 +159,6 @@ public class RagdollController : MonoBehaviour
         if (animator != null)
             animator.enabled = true;
 
-        PlayerCollisionHandler collisionHandler = GetComponent<PlayerCollisionHandler>();
         if (collisionHandler != null)
             collisionHandler.StartInvulnerability();
 
@@ -151,23 +172,9 @@ public class RagdollController : MonoBehaviour
     {
         isRagdollActive = false;
         respawnScheduled = false;
+        respawnTimer = 0f;
 
-        foreach (Rigidbody rb in ragdollRigidbodies)
-        {
-            if (rb == null || rb == mainRigidbody) continue;
-
-            rb.useGravity = false;
-            rb.isKinematic = false;
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            rb.isKinematic = true;
-        }
-
-        foreach (Collider col in ragdollColliders)
-        {
-            if (col == null || col == mainCollider) continue;
-            col.enabled = false;
-        }
+        SetRagdollState(false);
 
         if (mainCollider != null)
             mainCollider.enabled = true;
@@ -185,5 +192,22 @@ public class RagdollController : MonoBehaviour
 
         if (playerMovementScript != null)
             playerMovementScript.enabled = true;
+    }
+
+    private void SetRagdollState(bool enabled)
+    {
+        for (int i = 0; i < ragdollRigidbodies.Length; i++)
+        {
+            Rigidbody rb = ragdollRigidbodies[i];
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.useGravity = enabled;
+            rb.isKinematic = !enabled;
+        }
+
+        for (int i = 0; i < ragdollColliders.Length; i++)
+        {
+            ragdollColliders[i].enabled = enabled;
+        }
     }
 }

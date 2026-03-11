@@ -316,8 +316,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a571970c457c2944ab559826f9030e1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  moveSpeed: 5
-  xClamp: 2.5
+  laneChangeDuration: 0.15
+  leftLaneX: -3
+  middleLaneX: 0
+  rightLaneX: 3
+  animator: {fileID: 0}
 --- !u!54 &317340240
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -343,8 +346,8 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 1
   m_Interpolate: 1
-  m_Constraints: 0
-  m_CollisionDetection: 0
+  m_Constraints: 112
+  m_CollisionDetection: 2
 --- !u!114 &317340241
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1454,6 +1457,18 @@ PrefabInstance:
     - target: {fileID: 872120776553078708, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
       propertyPath: m_Layer
       value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1014860696115371117, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
+      propertyPath: m_Avatar
+      value: 
+      objectReference: {fileID: 9000000, guid: ff3dadb3e7848354cbb0ce469eaa5e6b, type: 3}
+    - target: {fileID: 1014860696115371117, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 1a8b042e68afd02418f64911393a6997, type: 2}
+    - target: {fileID: 1014860696115371117, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1331061395077129435, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
       propertyPath: m_Layer
