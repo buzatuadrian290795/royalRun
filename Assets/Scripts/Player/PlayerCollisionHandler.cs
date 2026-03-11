@@ -2,29 +2,20 @@ using UnityEngine;
 
 public class PlayerCollisionHandler : MonoBehaviour
 {
-    [SerializeField] float invulnerabilityDuration = 1f;
-    [SerializeField] float blinkInterval = 0.1f;
-    [SerializeField] Renderer[] renderersToBlink;
-
-    RagdollController ragdollController;
-    bool isInvulnerable;
-
-    int playerLayer;
-    int obstacleLayer;
-
-    float invulnerabilityTimer;
-    float blinkTimer;
-    bool visible = true;
+    [SerializeField] private float invulnerabilityDuration = 1f;
+    [SerializeField] private float blinkInterval = 0.1f;
+    [SerializeField] private Renderer meshRenderer;
+    [SerializeField] private RagdollController ragdollController;
+    
+    private int playerLayer;
+    private int obstacleLayer;
+    private bool isInvulnerable;
+    private bool visible = true;
+    private float invulnerabilityTimer;
+    private float blinkTimer;
 
     private void Awake()
     {
-        ragdollController = GetComponent<RagdollController>();
-
-        if (renderersToBlink == null || renderersToBlink.Length == 0)
-        {
-            renderersToBlink = GetComponentsInChildren<Renderer>(true);
-        }
-
         playerLayer = LayerMask.NameToLayer("Player");
         obstacleLayer = LayerMask.NameToLayer("Obstacle");
     }
@@ -53,6 +44,7 @@ public class PlayerCollisionHandler : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
+        //Debug.LogError(isInvulnerable);
         if (isInvulnerable) return;
         if (ragdollController == null) return;
         if (ragdollController.IsRagdollActive) return;
@@ -99,10 +91,6 @@ public class PlayerCollisionHandler : MonoBehaviour
 
     private void SetRenderersVisible(bool isVisible)
     {
-        foreach (Renderer rend in renderersToBlink)
-        {
-            if (rend != null)
-                rend.enabled = isVisible;
-        }
+        meshRenderer.enabled = isVisible;
     }
 }

@@ -255,7 +255,7 @@ Transform:
   m_LocalScale: {x: 1.2978542, y: 1.2978542, z: 1.2978542}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1715765105}
+  - {fileID: 1779772742}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &317340238
@@ -316,11 +316,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a571970c457c2944ab559826f9030e1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  laneChangeDuration: 0.15
-  leftLaneX: -3
-  middleLaneX: 0
-  rightLaneX: 3
-  animator: {fileID: 0}
+  <Animator>k__BackingField: {fileID: 1779772743}
+  <RigidBody>k__BackingField: {fileID: 317340240}
 --- !u!54 &317340240
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -362,7 +359,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCollisionHandler
   invulnerabilityDuration: 3
   blinkInterval: 0.15
-  renderersToBlink: []
+  meshRenderer: {fileID: 1311347680}
+  ragdollController: {fileID: 317340243}
 --- !u!136 &317340242
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -402,6 +400,7 @@ MonoBehaviour:
   mainRigidbody: {fileID: 317340240}
   mainCollider: {fileID: 317340242}
   playerMovementScript: {fileID: 317340239}
+  collisionHandler: {fileID: 317340241}
   respawnDelay: 2
   spawnPoint: {fileID: 1640531582}
 --- !u!1 &330585543
@@ -778,8 +777,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 494997740}
+  - component: {fileID: 494997741}
   m_Layer: 9
-  m_Name: Chunk Parent
+  m_Name: Road
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -795,6 +795,69 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -2.33388, y: -0, z: 0.47329}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &494997741
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 494997739}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e7d6588f5914d36a5ef5b160a13411d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoadView
+  <LaneChangeDuration>k__BackingField: 0.25
+  <LanePositions>k__BackingField:
+  - -2.5
+  - 0
+  - 2.5
+--- !u!1 &722481365
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 722481367}
+  - component: {fileID: 722481366}
+  m_Layer: 0
+  m_Name: _EntryPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &722481366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 722481365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28bce702b0a04466ad98823e78fb5185, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EntryPoint
+  playerView: {fileID: 317340239}
+  roadView: {fileID: 494997741}
+--- !u!4 &722481367
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 722481365}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1317,6 +1380,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e73e9ea8ebd31814bb00c80c8fc1756a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleDestroy
+--- !u!137 &1311347680 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7720500514717130458, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
+  m_PrefabInstance: {fileID: 1418874227}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1366082214 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1646929179161167256, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
@@ -1424,7 +1492,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1715765105}
+    m_TransformParent: {fileID: 317340237}
     m_Modifications:
     - target: {fileID: 121630204670731542, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
       propertyPath: m_Layer
@@ -1644,15 +1712,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6410221756858730007, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6410221756858730007, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6410221756858730007, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6410221756858730007, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -2133,38 +2201,6 @@ CapsuleCollider:
   m_Height: 0.24812758
   m_Direction: 1
   m_Center: {x: 0, y: 0.12406379, z: 0}
---- !u!1 &1715765104
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1715765105}
-  m_Layer: 8
-  m_Name: Model
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1715765105
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1715765104}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1779772742}
-  m_Father: {fileID: 317340237}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1779772742 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6410221756858730007, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
@@ -2380,6 +2416,7 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 722481367}
   - {fileID: 330585546}
   - {fileID: 410087041}
   - {fileID: 832575519}

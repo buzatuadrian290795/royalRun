@@ -5,7 +5,7 @@ public class RagdollController : MonoBehaviour
     [SerializeField] Animator animator;
     [SerializeField] Rigidbody mainRigidbody;
     [SerializeField] Collider mainCollider;
-    [SerializeField] PlayerController playerMovementScript;
+    [SerializeField] PlayerView playerMovementScript;
     [SerializeField] PlayerCollisionHandler collisionHandler;
     [SerializeField] float respawnDelay = 2f;
     [SerializeField] Transform spawnPoint;
@@ -34,7 +34,7 @@ public class RagdollController : MonoBehaviour
             mainCollider = GetComponent<Collider>();
 
         if (playerMovementScript == null)
-            playerMovementScript = GetComponent<PlayerController>();
+            playerMovementScript = GetComponent<PlayerView>();
 
         if (collisionHandler == null)
             collisionHandler = GetComponent<PlayerCollisionHandler>();
@@ -47,7 +47,7 @@ public class RagdollController : MonoBehaviour
         DisableRagdollImmediate();
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
         if (!respawnScheduled)
             return;

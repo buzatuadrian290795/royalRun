@@ -1,186 +1,126 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem.EnhancedTouch;
-
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : IDisposable
 {
-    [SerializeField] float laneChangeDuration = 0.25f;
-    [SerializeField] float[] lanePositions = { -3f, 0f, 3f };
-    [SerializeField] Animator animator;
-
-    Rigidbody rigidBody;
-    Transform cachedTransform;
-    float fixedZPosition;
-    float halfScreenWidth;
-
-    int currentLane = 1;
-
-    bool isChangingLane;
-    float laneChangeTimer;
-    float startX;
-    float targetX;
-
-    private void Awake()
+    private enum Movement
     {
-        cachedTransform = transform;
+        None = 0,
+        Left,
+        Right
+    }
 
-        if (rigidBody == null)
-            rigidBody = GetComponent<Rigidbody>();
+    private readonly PlayerView m_PlayerView;
+    private readonly RoadView m_RoadView;
 
-        if (animator == null)
-            animator = GetComponentInChildren<Animator>();
+    private float m_HalfScreenWidth;
+    private int m_CurrentLane = 1;
+    private bool m_IsChangingLane = false;
 
-        if (rigidBody == null)
-        {
-            Debug.LogError("PlayerController: Rigidbody not found.");
-            enabled = false;
-            return;
-        }
+    public PlayerController(PlayerView playerView, RoadView roadView)
+    {
+        m_PlayerView = playerView;
+        m_RoadView = roadView;
 
-        if (animator == null)
-        {
-            Debug.LogError("PlayerController: Animator not found.");
-        }
+        Init();
+    }
 
-        if (lanePositions == null || lanePositions.Length != 3)
-        {
-            Debug.LogError("PlayerController: lanePositions must contain exactly 3 values.");
-            enabled = false;
-            return;
-        }
-
-        fixedZPosition = rigidBody.position.z;
-        halfScreenWidth = Screen.width * 0.5f;
-
-        currentLane = Mathf.Clamp(currentLane, 0, lanePositions.Length - 1);
-        targetX = lanePositions[currentLane];
-
-        Vector3 startPosition = rigidBody.position;
-        startPosition.x = targetX;
-        startPosition.z = fixedZPosition;
-        rigidBody.position = startPosition;
+    private void Init()
+    {
+        m_HalfScreenWidth = Screen.width * 0.5f;
+        m_PlayerView.transform.position = Vector3.zero;
 
         EnhancedTouchSupport.Enable();
         TouchSimulation.Enable();
     }
 
-    private void OnDestroy()
+    public void Tick()
+    {
+        var movement = ReadInput();
+        if (movement == Movement.None)
+        {
+            return;
+        }
+    
+        HandleMovementAsync(movement);
+    }
+
+    public void Dispose()
     {
         TouchSimulation.Disable();
         EnhancedTouchSupport.Disable();
     }
 
-    private void Update()
+    private Movement ReadInput()
     {
-        ReadInput();
-    }
-
-    private void FixedUpdate()
-    {
-        HandleLaneChangeMovement();
-    }
-
-    private void ReadInput()
-    {
-        if (isChangingLane)
-            return;
-
-        for (int i = 0; i < Touch.activeTouches.Count; i++)
+        if (m_IsChangingLane || Touch.activeTouches.Count == 0)
         {
-            Touch touch = Touch.activeTouches[i];
-
-            if (touch.phase != UnityEngine.InputSystem.TouchPhase.Began)
-                continue;
-
-            if (touch.screenPosition.x < halfScreenWidth)
-                TryMoveLeft();
-            else
-                TryMoveRight();
-
-            return;
-        }
-    }
-
-    private void TryMoveLeft()
-    {
-        if (currentLane <= 0)
-            return;
-
-        StartLaneChange(currentLane - 1);
-    }
-
-    private void TryMoveRight()
-    {
-        if (currentLane >= lanePositions.Length - 1)
-            return;
-
-        StartLaneChange(currentLane + 1);
-    }
-
-    private void StartLaneChange(int newLane)
-    {
-        if (newLane == currentLane)
-            return;
-
-        isChangingLane = true;
-        laneChangeTimer = 0f;
-        startX = rigidBody.position.x;
-        targetX = lanePositions[newLane];
-        currentLane = newLane;
-
-        if (animator != null)
-            animator.SetBool("IsJumping", true);
-    }
-
-    private void HandleLaneChangeMovement()
-    {
-        if (!isChangingLane)
-            return;
-
-        laneChangeTimer += Time.fixedDeltaTime;
-
-        float duration = laneChangeDuration > 0f ? laneChangeDuration : 0.0001f;
-        float t = laneChangeTimer / duration;
-
-        if (t >= 1f)
-        {
-            t = 1f;
-            isChangingLane = false;
+            return Movement.None;
         }
 
-        Vector3 position = rigidBody.position;
-        position.x = Mathf.Lerp(startX, targetX, t);
-        position.z = fixedZPosition;
+        var touch = Touch.activeTouches[0];
+        if (touch.phase != UnityEngine.InputSystem.TouchPhase.Began)
+        {
+            return Movement.None;
+        }
 
-        rigidBody.MovePosition(position);
+        if (touch.screenPosition.x <= m_HalfScreenWidth && m_CurrentLane != 0)
+        {
+            return Movement.Left;
+        }
 
-        if (!isChangingLane && animator != null)
-            animator.SetBool("IsJumping", false);
+        if (touch.screenPosition.x >= m_HalfScreenWidth && m_CurrentLane != 2)
+        {
+            return Movement.Right;
+        }
+
+        return Movement.None;
     }
 
-    public void SetLaneInstant(int laneIndex)
+    private async Awaitable HandleMovementAsync(Movement movement)
     {
-        laneIndex = Mathf.Clamp(laneIndex, 0, lanePositions.Length - 1);
+        if (movement == Movement.None)
+        {
+            return;
+        }
 
-        currentLane = laneIndex;
-        targetX = lanePositions[currentLane];
-        startX = targetX;
-        laneChangeTimer = 0f;
-        isChangingLane = false;
+        m_IsChangingLane = true;
+        m_CurrentLane = movement switch
+        {
+            Movement.Left => m_CurrentLane - 1,
+            Movement.Right => m_CurrentLane + 1,
+            _ => m_CurrentLane
+        };
 
-        Vector3 position = rigidBody.position;
-        position.x = targetX;
-        position.z = fixedZPosition;
+        m_PlayerView.Animator.SetBool("IsJumping", true);
 
-        rigidBody.position = position;
+        await MovePlayerAsync();
 
-        if (animator != null)
-            animator.SetBool("IsJumping", false);
+        m_PlayerView.Animator.SetBool("IsJumping", false);
+        m_IsChangingLane = false;
     }
 
-    public int GetCurrentLane()
+    private async Awaitable MovePlayerAsync()
     {
-        return currentLane;
+        var time = 0f;
+        var startPosition = m_PlayerView.RigidBody.position.x;
+        var destination = m_RoadView.LanePositions[m_CurrentLane];
+        var duration = m_RoadView.LaneChangeDuration;
+
+        while (time < duration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
+        {
+            var position = Mathf.Lerp(startPosition, destination, time / duration);
+            m_PlayerView.RigidBody.MovePosition(new Vector3
+            {
+                x = position,
+                y = m_PlayerView.RigidBody.position.y,
+                z = m_PlayerView.RigidBody.position.z
+            });
+
+            await Awaitable.NextFrameAsync();
+            time += Time.deltaTime;
+        }
     }
 }
