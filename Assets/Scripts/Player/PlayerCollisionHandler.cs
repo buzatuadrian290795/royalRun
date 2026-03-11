@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 
 public class PlayerCollisionHandler : MonoBehaviour
@@ -12,7 +11,10 @@ public class PlayerCollisionHandler : MonoBehaviour
 
     int playerLayer;
     int obstacleLayer;
-    Coroutine invulnerabilityRoutine;
+
+    float invulnerabilityTimer;
+    float blinkTimer;
+    bool visible = true;
 
     private void Awake()
     {
@@ -25,6 +27,28 @@ public class PlayerCollisionHandler : MonoBehaviour
 
         playerLayer = LayerMask.NameToLayer("Player");
         obstacleLayer = LayerMask.NameToLayer("Obstacle");
+    }
+
+    private void Update()
+    {
+        if (!isInvulnerable) return;
+
+        invulnerabilityTimer -= Time.deltaTime;
+        blinkTimer -= Time.deltaTime;
+
+        if (blinkTimer <= 0f)
+        {
+            visible = !visible;
+            SetRenderersVisible(visible);
+            Debug.Log("Blink: " + visible);
+
+            blinkTimer = blinkInterval;
+        }
+
+        if (invulnerabilityTimer <= 0f)
+        {
+            EndInvulnerability();
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -44,15 +68,6 @@ public class PlayerCollisionHandler : MonoBehaviour
         if (isInvulnerable) return;
 
         Debug.Log("StartInvulnerability ENTER");
-
-        if (invulnerabilityRoutine != null)
-            StopCoroutine(invulnerabilityRoutine);
-
-        invulnerabilityRoutine = StartCoroutine(InvulnerabilityCoroutine());
-    }
-    // Schimba coroutina
-    private IEnumerator InvulnerabilityCoroutine()
-    {
         Debug.Log("Invulnerability START");
 
         isInvulnerable = true;
@@ -62,20 +77,14 @@ public class PlayerCollisionHandler : MonoBehaviour
             Physics.IgnoreLayerCollision(playerLayer, obstacleLayer, true);
         }
 
-        float elapsed = 0f;
-        bool visible = true;
+        invulnerabilityTimer = invulnerabilityDuration;
+        blinkTimer = blinkInterval;
+        visible = true;
+        SetRenderersVisible(true);
+    }
 
-        while (elapsed < invulnerabilityDuration)
-        {
-            visible = !visible;
-            SetRenderersVisible(visible);
-
-            Debug.Log("Blink: " + visible);
-
-            yield return new WaitForSeconds(blinkInterval);
-            elapsed += blinkInterval;
-        }
-
+    private void EndInvulnerability()
+    {
         SetRenderersVisible(true);
 
         if (playerLayer != -1 && obstacleLayer != -1)
@@ -84,7 +93,6 @@ public class PlayerCollisionHandler : MonoBehaviour
         }
 
         isInvulnerable = false;
-        invulnerabilityRoutine = null;
 
         Debug.Log("Invulnerability END");
     }

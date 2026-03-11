@@ -1,5 +1,4 @@
-using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class RagdollController : MonoBehaviour
 {
@@ -13,8 +12,9 @@ public class RagdollController : MonoBehaviour
     Rigidbody[] ragdollRigidbodies;
     Collider[] ragdollColliders;
 
-    Coroutine respawnRoutine;
     bool isRagdollActive;
+    bool respawnScheduled;
+    float respawnTimer;
 
     public bool IsRagdollActive => isRagdollActive;
 
@@ -32,9 +32,23 @@ public class RagdollController : MonoBehaviour
         DisableRagdollImmediate();
     }
 
+    private void Update()
+    {
+        if (!respawnScheduled) return;
+
+        respawnTimer -= Time.deltaTime;
+
+        if (respawnTimer <= 0f)
+        {
+            respawnScheduled = false;
+            Respawn();
+        }
+    }
+
     public void EnableRagdoll()
     {
         if (isRagdollActive) return;
+
         isRagdollActive = true;
 
         if (animator != null)
@@ -70,25 +84,21 @@ public class RagdollController : MonoBehaviour
             col.enabled = true;
         }
 
-        if (respawnRoutine != null)
-            StopCoroutine(respawnRoutine);
-
-        respawnRoutine = StartCoroutine(RespawnCoroutine());
+        respawnTimer = respawnDelay;
+        respawnScheduled = true;
     }
-    private IEnumerator RespawnCoroutine()
-    {
-        yield return new WaitForSeconds(respawnDelay);
 
-        // 1. opreste ragdoll total
+    private void Respawn()
+    {
+        // 1. oprește ragdoll total
         foreach (Rigidbody rb in ragdollRigidbodies)
         {
             if (rb == null || rb == mainRigidbody) continue;
 
-            rb.isKinematic = false;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
-            rb.isKinematic = true;
             rb.useGravity = false;
+            rb.isKinematic = true;
         }
 
         foreach (Collider col in ragdollColliders)
@@ -97,30 +107,27 @@ public class RagdollController : MonoBehaviour
             col.enabled = false;
         }
 
-        // 2. muta playerul exact la spawn
-        yield return null;
+        // 2. mută playerul exact la spawn
         if (spawnPoint != null)
         {
             transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+            Physics.SyncTransforms();
         }
 
-        yield return null;
-        Physics.SyncTransforms();
-
-        // 3. reseteaza rigidbody-ul principal
+        // 3. resetează rigidbody-ul principal
         if (mainRigidbody != null)
         {
             mainRigidbody.isKinematic = false;
             mainRigidbody.useGravity = false;
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
-            mainRigidbody.isKinematic = true;
             mainRigidbody.position = transform.position;
             mainRigidbody.rotation = transform.rotation;
+            mainRigidbody.isKinematic = true;
             mainRigidbody.Sleep();
         }
 
-        // 4. reporneste corpul principal
+        // 4. repornește corpul principal
         if (mainCollider != null)
             mainCollider.enabled = true;
 
@@ -138,19 +145,19 @@ public class RagdollController : MonoBehaviour
             playerMovementScript.enabled = true;
 
         isRagdollActive = false;
-        respawnRoutine = null;
     }
 
     private void DisableRagdollImmediate()
     {
         isRagdollActive = false;
+        respawnScheduled = false;
 
         foreach (Rigidbody rb in ragdollRigidbodies)
         {
             if (rb == null || rb == mainRigidbody) continue;
 
-            rb.isKinematic = false;
             rb.useGravity = false;
+            rb.isKinematic = false;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             rb.isKinematic = true;
