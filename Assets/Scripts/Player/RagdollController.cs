@@ -122,7 +122,7 @@ public class RagdollController : MonoBehaviour
         {
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
-            mainRigidbody.useGravity = false;
+            mainRigidbody.useGravity = true;
             mainRigidbody.isKinematic = true;
         }
 
@@ -206,9 +206,11 @@ public class RagdollController : MonoBehaviour
             Rigidbody rb = ragdollRigidbodies[i];
 
             rb.isKinematic = false;
-            rb.useGravity = enabled;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+
+            rb.isKinematic = !enabled;
+            rb.useGravity = enabled;
         }
 
         for (int i = 0; i < ragdollColliders.Length; i++)
