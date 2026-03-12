@@ -120,10 +120,11 @@ public class RagdollController : MonoBehaviour
 
         if (mainRigidbody != null)
         {
+
+            mainRigidbody.useGravity = false;
+            mainRigidbody.isKinematic = false;
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
-            mainRigidbody.useGravity = false;
-            mainRigidbody.isKinematic = true;
         }
 
         SetRagdollState(true);
@@ -149,7 +150,6 @@ public class RagdollController : MonoBehaviour
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
             
-            mainRigidbody.isKinematic = true;
             mainRigidbody.position = cachedTransform.position;
             mainRigidbody.rotation = cachedTransform.rotation;
             mainRigidbody.Sleep();
@@ -211,10 +211,11 @@ public class RagdollController : MonoBehaviour
                 continue;
             }
 
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
             rb.isKinematic = false;
             rb.useGravity = false;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+
             //rb.isKinematic = !enabled;
             //rb.useGravity = enabled;
         }
