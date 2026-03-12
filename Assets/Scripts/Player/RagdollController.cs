@@ -211,10 +211,12 @@ public class RagdollController : MonoBehaviour
                 continue;
             }
 
-            rb.isKinematic = false;
-            rb.useGravity = enabled;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = false;
+            rb.useGravity = false;
+            //rb.isKinematic = !enabled;
+            //rb.useGravity = enabled;
         }
 
         for (int i = 0; i < ragdollColliders.Length; i++)
