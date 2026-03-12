@@ -47,7 +47,7 @@ public class RagdollController : MonoBehaviour
         DisableRagdollImmediate();
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (!respawnScheduled)
             return;

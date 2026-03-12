@@ -345,7 +345,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 1
   m_Interpolate: 1
-  m_Constraints: 0
+  m_Constraints: 112
   m_CollisionDetection: 2
 --- !u!114 &317340241
 MonoBehaviour:
@@ -2299,6 +2299,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1488083878}
   - component: {fileID: 1488083877}
+  - component: {fileID: 1488083879}
   m_Layer: 0
   m_Name: Game Manager
   m_TagString: Untagged
@@ -2336,6 +2337,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1488083879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1488083876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb931ef224900fc4d81e2f88a02c4f94, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CoinCounterUI
+  coinsText: {fileID: 1802811761}
 --- !u!1 &1538686997 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6910046169158646657, guid: dcbc89efbe5bd174b99e07c76bd0b6bf, type: 3}
@@ -2462,7 +2476,7 @@ Transform:
   m_GameObject: {fileID: 1640531581}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

@@ -3,9 +3,13 @@
 public class Chunk : MonoBehaviour
 {
     [Header("Prefabs")]
-    [SerializeField] GameObject fencePrefab;
+    [SerializeField] GameObject[] obstaclePrefabs;
     [SerializeField] GameObject applePrefab;
     [SerializeField] GameObject coinPrefab;
+
+    [Header("Obstacle Spawn")]
+    [SerializeField] private int minObstaclesToSpawn = 0;
+    [SerializeField] private int maxObstaclesToSpawn = 2;
 
     [Header("Spawn Chances")]
     [SerializeField, Range(0f, 1f)] float appleSpawnChance = 0.3f;
@@ -26,9 +30,9 @@ public class Chunk : MonoBehaviour
     readonly int[] availableLanes = new int[LaneCount] { 0, 1, 2 };
 
     Transform cachedTransform;
-    float chunkX;
-    float chunkY;
-    float chunkZ;
+    private float chunkX;
+    private float chunkY;
+    private float chunkZ;
 
     private void Awake()
     {
@@ -40,7 +44,7 @@ public class Chunk : MonoBehaviour
         CacheChunkPosition();
         ResetAvailableLanes();
 
-        SpawnFences();
+        SpawnObstacles();
         SpawnApple();
         SpawnCoins();
     }
@@ -61,31 +65,51 @@ public class Chunk : MonoBehaviour
         availableLaneCount = LaneCount;
     }
 
-    private void SpawnFences()
+    private void SpawnObstacles()
     {
-        int fencesToSpawn = Random.Range(0, obstacleLanes.Length);
+        if (obstaclePrefabs == null || obstaclePrefabs.Length == 0)
+            return;
 
-        for (int i = 0; i < fencesToSpawn; i++)
+        int maxSpawnAllowed = Mathf.Min(maxObstaclesToSpawn, obstacleLanes.Length, availableLaneCount);
+        int minSpawnAllowed = Mathf.Clamp(minObstaclesToSpawn, 0, maxSpawnAllowed);
+
+        int obstaclesToSpawn = Random.Range(minSpawnAllowed, maxSpawnAllowed + 1);
+
+        for (int i = 0; i < obstaclesToSpawn; i++)
         {
             if (availableLaneCount == 0)
                 return;
 
             int lane = SelectRandomAvailableLane();
 
-            // Evită obstacol pe mijloc chiar la începutul jocului.
-            // Punem lane-ul la loc ca să nu-l "pierdem".
             if (Time.time < 1f && lane == 1)
             {
                 PutLaneBack(lane);
                 continue;
             }
 
-            SpawnObject(fencePrefab, obstacleLanes[lane], chunkY, chunkZ);
+            GameObject obstaclePrefab = GetRandomObstaclePrefab();
+            if (obstaclePrefab == null)
+                continue;
+
+            SpawnObject(obstaclePrefab, obstacleLanes[lane], chunkY, chunkZ);
         }
+    }
+
+    private GameObject GetRandomObstaclePrefab()
+    {
+        if (obstaclePrefabs == null || obstaclePrefabs.Length == 0)
+            return null;
+
+        int randomIndex = Random.Range(0, obstaclePrefabs.Length);
+        return obstaclePrefabs[randomIndex];
     }
 
     private void SpawnApple()
     {
+        if (applePrefab == null)
+            return;
+
         if (availableLaneCount == 0 || Random.value > appleSpawnChance)
             return;
 
@@ -133,6 +157,9 @@ public class Chunk : MonoBehaviour
 
     private void SpawnObject(GameObject prefab, float x, float y, float z)
     {
+        if (prefab == null)
+            return;
+
         Instantiate(prefab, new Vector3(x, y, z), Quaternion.identity, cachedTransform);
     }
 }

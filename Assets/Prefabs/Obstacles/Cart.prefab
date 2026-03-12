@@ -85,6 +85,10 @@ PrefabInstance:
       value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 7126813344934234360, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
+      propertyPath: m_IsKinematic
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7126813344934234360, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
       propertyPath: m_LinearDamping
       value: 0.2
       objectReference: {fileID: 0}
