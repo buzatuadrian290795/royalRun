@@ -4,6 +4,6 @@ public class Apple : Pickup
 {
     protected override void OnPickup()
     {
-        Debug.Log("Add 100 points");
+        Debug.Log("Add Vitamins");
     }
 }
