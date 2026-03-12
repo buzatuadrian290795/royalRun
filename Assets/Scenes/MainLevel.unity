@@ -318,6 +318,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   <Animator>k__BackingField: {fileID: 1779772743}
   <RigidBody>k__BackingField: {fileID: 317340240}
+  <InvulnerabilityDuration>k__BackingField: 1
+  <BlinkInterval>k__BackingField: 0.1
 --- !u!54 &317340240
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -401,7 +403,7 @@ MonoBehaviour:
   mainCollider: {fileID: 317340242}
   playerMovementScript: {fileID: 317340239}
   collisionHandler: {fileID: 317340241}
-  respawnDelay: 2
+  respawnDelay: 5
   spawnPoint: {fileID: 1640531582}
 --- !u!1 &330585543
 GameObject:

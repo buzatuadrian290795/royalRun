@@ -52,7 +52,7 @@ public class RagdollController : MonoBehaviour
         if (!respawnScheduled)
             return;
 
-        respawnTimer -= Time.fixedDeltaTime;
+        respawnTimer -= Time.deltaTime;
 
         if (respawnTimer > 0f)
             return;
@@ -205,6 +205,12 @@ public class RagdollController : MonoBehaviour
         {
             Rigidbody rb = ragdollRigidbodies[i];
 
+            if (rb == null)
+            {
+                Debug.LogError($"RagdollController: ragdollRigidbodies[{i}] is NULL");
+                continue;
+            }
+
             rb.isKinematic = false;
             rb.useGravity = enabled;
             rb.linearVelocity = Vector3.zero;
@@ -213,6 +219,11 @@ public class RagdollController : MonoBehaviour
 
         for (int i = 0; i < ragdollColliders.Length; i++)
         {
+            if (ragdollColliders[i] == null)
+            {
+                Debug.LogError($"RagdollController: ragdollColliders[{i}] is NULL");
+                continue;
+            }
             ragdollColliders[i].enabled = enabled;
         }
     }
