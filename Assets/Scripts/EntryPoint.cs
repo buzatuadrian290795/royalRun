@@ -2,23 +2,33 @@ using UnityEngine;
 
 public class EntryPoint : MonoBehaviour
 {
-    [SerializeField] private PlayerView playerView;
     [SerializeField] private RoadView roadView;
 
     private PlayerController m_PlayerController;
 
-    private void Start()
+    public void InitializePlayer(PlayerView playerView)
     {
+        if (m_PlayerController != null)
+        {
+            m_PlayerController.Dispose();
+        }
+
         m_PlayerController = new PlayerController(playerView, roadView);
     }
 
     private void Update()
     {
-        m_PlayerController.Tick();
+        if (m_PlayerController != null)
+        {
+            m_PlayerController.Tick();
+        }
     }
 
     private void OnDestroy()
     {
-        m_PlayerController.Dispose();
+        if (m_PlayerController != null)
+        {
+            m_PlayerController.Dispose();
+        }
     }
 }
