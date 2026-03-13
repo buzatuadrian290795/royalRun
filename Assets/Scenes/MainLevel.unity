@@ -748,7 +748,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e7d6588f5914d36a5ef5b160a13411d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoadView
-  <LaneChangeDuration>k__BackingField: 0.25
+  <LaneChangeDuration>k__BackingField: 0.1
   <LanePositions>k__BackingField:
   - -2.5
   - 0
@@ -2315,10 +2315,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator
   chunkPrefab: {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
-  startingChunksAmount: 10
+  startingChunksAmount: 6
   chunkParent: {fileID: 494997740}
   chunkLength: 10
   moveSpeed: 8
+  maxMoveSpeed: 30
 --- !u!4 &1953353384
 Transform:
   m_ObjectHideFlags: 0

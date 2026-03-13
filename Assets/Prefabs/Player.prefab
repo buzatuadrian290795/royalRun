@@ -56,9 +56,8 @@ MonoBehaviour:
   playerMovementScript: {fileID: 2886619608994256899}
   collisionHandler: {fileID: 8828872184697740047}
   respawnDelay: 2
-  spawnPoint: {fileID: 0}
-  knockbackForce: 24
-  knockbackUpwardForce: 2
+  knockbackForce: 20
+  knockbackUpwardForce: 4
 --- !u!114 &2886619608994256899
 MonoBehaviour:
   m_ObjectHideFlags: 0

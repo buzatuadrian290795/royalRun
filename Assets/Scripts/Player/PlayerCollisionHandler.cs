@@ -6,6 +6,7 @@ public class PlayerCollisionHandler : MonoBehaviour
     [SerializeField] private float blinkInterval = 0.1f;
     [SerializeField] private Renderer meshRenderer;
     [SerializeField] private RagdollController ragdollController;
+    [SerializeField] private float adjustChangeMoveSpeedAmount = 2f;
     
     private int playerLayer;
     private int obstacleLayer;
