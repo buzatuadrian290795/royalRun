@@ -6,7 +6,7 @@ public abstract class Pickup : MonoBehaviour
 
     const string playerString = "Player";
 
-    private void Update()
+    private void FixedUpdate()
     {
         transform.Rotate(0f, rotationSpeed * Time.deltaTime, 0f);
     }

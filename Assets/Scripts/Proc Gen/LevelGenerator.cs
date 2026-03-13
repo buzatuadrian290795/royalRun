@@ -18,7 +18,7 @@ public class LevelGenerator : MonoBehaviour
         SpawnStartingChunks();
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         MoveChunks();
     }

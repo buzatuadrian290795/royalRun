@@ -9,6 +9,8 @@ public class RagdollController : MonoBehaviour
     [SerializeField] PlayerCollisionHandler collisionHandler;
     [SerializeField] float respawnDelay = 2f;
     [SerializeField] Transform spawnPoint;
+    [SerializeField] float knockbackForce = 8f;
+    [SerializeField] float knockbackUpwardForce = 2f;
 
     Rigidbody[] ragdollRigidbodies;
     Collider[] ragdollColliders;
@@ -47,7 +49,7 @@ public class RagdollController : MonoBehaviour
         DisableRagdollImmediate();
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (!respawnScheduled)
             return;
@@ -100,7 +102,7 @@ public class RagdollController : MonoBehaviour
         }
     }
 
-    public void EnableRagdoll()
+    public void EnableRagdoll(Vector3 hitSourcePosition)
     {
         if (isRagdollActive)
             return;
@@ -120,13 +122,33 @@ public class RagdollController : MonoBehaviour
 
         if (mainRigidbody != null)
         {
+
+            mainRigidbody.useGravity = false;
+            mainRigidbody.isKinematic = false;
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
-            mainRigidbody.useGravity = false;
-            mainRigidbody.isKinematic = true;
         }
 
         SetRagdollState(true);
+        ApplyKnockback(hitSourcePosition);
+    }
+
+    private void ApplyKnockback(Vector3 hitSourcePosition)
+    {
+        Vector3 direction = (transform.position - hitSourcePosition).normalized;
+        direction.y = 0f;
+
+        Vector3 force = direction * knockbackForce + Vector3.up * knockbackUpwardForce;
+
+        for (int i = 0; i < ragdollRigidbodies.Length; i++)
+        {
+            Rigidbody rb = ragdollRigidbodies[i];
+            if (rb == null) continue;
+
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.AddForce(force, ForceMode.Impulse);
+        }
     }
 
     private void Respawn()
@@ -149,7 +171,6 @@ public class RagdollController : MonoBehaviour
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
             
-            mainRigidbody.isKinematic = true;
             mainRigidbody.position = cachedTransform.position;
             mainRigidbody.rotation = cachedTransform.rotation;
             mainRigidbody.Sleep();
@@ -212,9 +233,12 @@ public class RagdollController : MonoBehaviour
             }
 
             rb.isKinematic = false;
-            rb.useGravity = enabled;
+            rb.useGravity = false;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+
+            //rb.isKinematic = !enabled;
+            //rb.useGravity = enabled;
         }
 
         for (int i = 0; i < ragdollColliders.Length; i++)

@@ -52,6 +52,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7126813344934234360, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
+      propertyPath: m_IsKinematic
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7827495774461422248, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
       propertyPath: m_Name
       value: Cannon

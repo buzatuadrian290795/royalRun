@@ -4,6 +4,7 @@ public class Coin : Pickup
 {
     protected override void OnPickup()
     {
-        Debug.Log("Power Up");
+        CoinCounterUI.Instance.AddCoin(1);
+        Debug.Log("+1 Coin");
     }
 }
