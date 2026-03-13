@@ -51,7 +51,8 @@ public class PlayerCollisionHandler : MonoBehaviour
 
         if (collision.gameObject.CompareTag("Obstacle"))
         {
-            ragdollController.EnableRagdoll();
+            Vector3 hitPoint = collision.transform.position;
+            ragdollController.EnableRagdoll(hitPoint);
         }
     }
 
