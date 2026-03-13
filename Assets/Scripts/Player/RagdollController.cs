@@ -8,13 +8,11 @@ public class RagdollController : MonoBehaviour
     [SerializeField] PlayerView playerMovementScript;
     [SerializeField] PlayerCollisionHandler collisionHandler;
     [SerializeField] float respawnDelay = 2f;
-    [SerializeField] Transform spawnPoint;
     [SerializeField] float knockbackForce = 8f;
     [SerializeField] float knockbackUpwardForce = 2f;
 
     Rigidbody[] ragdollRigidbodies;
     Collider[] ragdollColliders;
-    Transform cachedTransform;
 
     bool isRagdollActive;
     bool respawnScheduled;
@@ -24,8 +22,6 @@ public class RagdollController : MonoBehaviour
 
     private void Awake()
     {
-        cachedTransform = transform;
-
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
@@ -42,10 +38,6 @@ public class RagdollController : MonoBehaviour
             collisionHandler = GetComponent<PlayerCollisionHandler>();
 
         CacheRagdollParts();
-
-        if (spawnPoint != null)
-            cachedTransform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
-
         DisableRagdollImmediate();
     }
 
@@ -54,14 +46,25 @@ public class RagdollController : MonoBehaviour
         if (!respawnScheduled)
             return;
 
-        respawnTimer -= Time.deltaTime;
+        respawnTimer -= Time.fixedDeltaTime;
 
         if (respawnTimer > 0f)
             return;
 
-        respawnTimer = 0f;
         respawnScheduled = false;
-        Respawn();
+
+        PlayerRespawnManager respawnManager = FindFirstObjectByType<PlayerRespawnManager>();
+
+        if (respawnManager != null)
+        {
+            respawnManager.SpawnPlayer();
+        }
+        else
+        {
+            Debug.LogError("RagdollController: PlayerRespawnManager not found in scene.");
+        }
+
+        Destroy(gameObject);
     }
 
     private void CacheRagdollParts()
@@ -78,6 +81,7 @@ public class RagdollController : MonoBehaviour
 
         ragdollRigidbodies = new Rigidbody[ragdollRbCount];
         int rbIndex = 0;
+
         for (int i = 0; i < allRigidbodies.Length; i++)
         {
             Rigidbody rb = allRigidbodies[i];
@@ -94,6 +98,7 @@ public class RagdollController : MonoBehaviour
 
         ragdollColliders = new Collider[ragdollColCount];
         int colIndex = 0;
+
         for (int i = 0; i < allColliders.Length; i++)
         {
             Collider col = allColliders[i];
@@ -122,8 +127,7 @@ public class RagdollController : MonoBehaviour
 
         if (mainRigidbody != null)
         {
-
-            mainRigidbody.useGravity = false;
+            mainRigidbody.useGravity = true;
             mainRigidbody.isKinematic = false;
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
@@ -143,55 +147,13 @@ public class RagdollController : MonoBehaviour
         for (int i = 0; i < ragdollRigidbodies.Length; i++)
         {
             Rigidbody rb = ragdollRigidbodies[i];
-            if (rb == null) continue;
+            if (rb == null)
+                continue;
 
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             rb.AddForce(force, ForceMode.Impulse);
         }
-    }
-
-    private void Respawn()
-    {
-        SetRagdollState(false);
-
-        if (spawnPoint != null)
-        {
-            cachedTransform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
-            Physics.SyncTransforms();
-        }
-
-        if (mainRigidbody != null)
-        {
-            mainRigidbody.useGravity = false;
-
-            if (mainRigidbody.isKinematic)
-                mainRigidbody.isKinematic = false;
-            
-            mainRigidbody.linearVelocity = Vector3.zero;
-            mainRigidbody.angularVelocity = Vector3.zero;
-            
-            mainRigidbody.position = cachedTransform.position;
-            mainRigidbody.rotation = cachedTransform.rotation;
-            mainRigidbody.Sleep();
-        }
-
-        if (mainCollider != null)
-            mainCollider.enabled = true;
-
-        if (mainRigidbody != null)
-            mainRigidbody.isKinematic = false;
-
-        if (animator != null)
-            animator.enabled = true;
-
-        if (collisionHandler != null)
-            collisionHandler.StartInvulnerability();
-
-        if (playerMovementScript != null)
-            playerMovementScript.enabled = true;
-
-        isRagdollActive = false;
     }
 
     private void DisableRagdollImmediate()
@@ -232,13 +194,20 @@ public class RagdollController : MonoBehaviour
                 continue;
             }
 
-            rb.isKinematic = false;
-            rb.useGravity = false;
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-
-            //rb.isKinematic = !enabled;
-            //rb.useGravity = enabled;
+            if (enabled)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+            else
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.useGravity = false;
+                rb.isKinematic = true;
+            }
         }
 
         for (int i = 0; i < ragdollColliders.Length; i++)
@@ -248,6 +217,7 @@ public class RagdollController : MonoBehaviour
                 Debug.LogError($"RagdollController: ragdollColliders[{i}] is NULL");
                 continue;
             }
+
             ragdollColliders[i].enabled = enabled;
         }
     }
