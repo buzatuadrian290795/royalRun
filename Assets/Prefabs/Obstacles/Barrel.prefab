@@ -18,7 +18,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3101679061728951246, guid: 01b0d7cd3288fb04aa0c7ed55acafb11, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 0.7
       objectReference: {fileID: 0}
     - target: {fileID: 3101679061728951246, guid: 01b0d7cd3288fb04aa0c7ed55acafb11, type: 3}
       propertyPath: m_LocalPosition.z
@@ -77,7 +77,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5219966026044908373, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.7
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5219966026044908373, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
       propertyPath: m_LocalPosition.z
@@ -129,7 +129,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6342892758697327449, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
       propertyPath: m_Center.y
-      value: -0.016917452
+      value: 0.7
       objectReference: {fileID: 0}
     - target: {fileID: 6342892758697327449, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
       propertyPath: m_Center.z
@@ -190,7 +190,7 @@ CapsuleCollider:
   m_Radius: 0.5713242
   m_Height: 1.2575934
   m_Direction: 1
-  m_Center: {x: -0.0112166405, y: -0.04458928, z: 0.011335492}
+  m_Center: {x: -0.0112166405, y: 0.7, z: 0.011335492}
 --- !u!4 &7219964193150883418 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3743834753735036177, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}

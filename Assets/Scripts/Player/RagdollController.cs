@@ -127,7 +127,7 @@ public class RagdollController : MonoBehaviour
 
         if (mainRigidbody != null)
         {
-            mainRigidbody.useGravity = true;
+            mainRigidbody.useGravity = false;
             mainRigidbody.isKinematic = false;
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;

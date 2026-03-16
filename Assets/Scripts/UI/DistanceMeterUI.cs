@@ -6,14 +6,14 @@ public class DistanceMeter : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI distanceText;
     [SerializeField] private float moveSpeed = 1f;
-    [SerializeField] private RagdollController ragdollController;
+    //[SerializeField] private RagdollController ragdollController;
 
     private float distanceTravelled;
 
     private void FixedUpdate()
     {
         if (distanceText == null) return;
-        if (ragdollController != null && ragdollController.IsRagdollActive) return;
+        //if (ragdollController != null && ragdollController.IsRagdollActive) return;
 
         distanceTravelled += moveSpeed * Time.deltaTime;
 

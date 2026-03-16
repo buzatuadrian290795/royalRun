@@ -447,13 +447,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.08715578, y: 0, z: 0, w: 0.9961947}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 4, z: -12}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: -10, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -748,7 +748,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e7d6588f5914d36a5ef5b160a13411d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoadView
-  <LaneChangeDuration>k__BackingField: 0.1
+  <LaneChangeDuration>k__BackingField: 0.05
   <LanePositions>k__BackingField:
   - -2.5
   - 0
@@ -1121,72 +1121,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &860022577
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 860022579}
-  - component: {fileID: 860022578}
-  - component: {fileID: 860022580}
-  m_Layer: 0
-  m_Name: Obstacle Destroy Trigger Volume
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!65 &860022578
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 860022577}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!4 &860022579
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 860022577}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.193, y: -30, z: -0.26614}
-  m_LocalScale: {x: 300, y: 10, z: 600}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &860022580
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 860022577}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e73e9ea8ebd31814bb00c80c8fc1756a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ObstacleDestroy
 --- !u!1 &914623252
 GameObject:
   m_ObjectHideFlags: 0
@@ -1356,6 +1290,7 @@ MonoBehaviour:
   playerPrefab: {fileID: 8023938837109254523, guid: 947846e6b77e8ef4f9d52e09794b6566, type: 3}
   spawnPoint: {fileID: 1640531582}
   entryPoint: {fileID: 722481366}
+  levelGenerator: {fileID: 1953353383}
 --- !u!4 &1197498995
 Transform:
   m_ObjectHideFlags: 0
@@ -1465,7 +1400,7 @@ MonoBehaviour:
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
-  m_characterSpacing: 0
+  m_characterSpacing: 3.74
   m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
@@ -1692,7 +1627,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DistanceMeter
   distanceText: {fileID: 914623254}
   moveSpeed: 1
-  ragdollController: {fileID: 0}
 --- !u!4 &1488083878
 Transform:
   m_ObjectHideFlags: 0
@@ -2232,59 +2166,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1879633332}
   m_CullTransparentMesh: 1
---- !u!1 &1897571722
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1897571724}
-  - component: {fileID: 1897571723}
-  m_Layer: 9
-  m_Name: Obstacle Spawner
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1897571723
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1897571722}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa6d2cf9000ef4249addf0bce7a8c17e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ObstacleSpawner
-  obstaclePrefabs:
-  - {fileID: 8339986586608087906, guid: 1a3db1d8928405b4c9eca4efb12651d6, type: 3}
-  - {fileID: 4280226272728789475, guid: fcbfe1666e868a249947825dc505cfbf, type: 3}
-  - {fileID: 7137255509243367603, guid: 2eebf47fcea43ed46ac604b262670cf5, type: 3}
-  - {fileID: 7827495774461422248, guid: 5d140576af69c6b45b702d2829dd0c81, type: 3}
-  - {fileID: 7827495774461422248, guid: c6c5be0c148b69240b42b2cbdb5e81aa, type: 3}
-  obstacleSpawnTime: 1
-  obstacleParent: {fileID: 494997740}
-  spawnWidth: 5
---- !u!4 &1897571724
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1897571722}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 60}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1953353382
 GameObject:
   m_ObjectHideFlags: 0
@@ -2315,11 +2196,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator
   chunkPrefab: {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
-  startingChunksAmount: 6
+  startingChunksAmount: 12
   chunkParent: {fileID: 494997740}
   chunkLength: 10
   moveSpeed: 8
-  maxMoveSpeed: 30
+  minMoveSpeed: 8
+  maxMoveSpeed: 24
 --- !u!4 &1953353384
 Transform:
   m_ObjectHideFlags: 0
@@ -2420,8 +2302,6 @@ SceneRoots:
   - {fileID: 832575519}
   - {fileID: 1953353384}
   - {fileID: 494997740}
-  - {fileID: 1897571724}
-  - {fileID: 860022579}
   - {fileID: 1640531582}
   - {fileID: 368612062}
   - {fileID: 1234431202}

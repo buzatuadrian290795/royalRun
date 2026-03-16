@@ -6,6 +6,11 @@ public class EntryPoint : MonoBehaviour
 
     private PlayerController m_PlayerController;
 
+    private void Awake()
+    {
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+    }
+
     public void InitializePlayer(PlayerView playerView)
     {
         if (m_PlayerController != null)
