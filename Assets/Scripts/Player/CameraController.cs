@@ -4,19 +4,45 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    [SerializeField] ParticleSystem speedupParticleSystem;
-    [SerializeField] float minFOV = 60f;
-    [SerializeField] float maxFOV = 120f;
-    [SerializeField] float zoomDuration = 1f;
-    [SerializeField] float zoomSpeedModifier = 1f;
-    [SerializeField] float resetFOVDuration = 1f;
+    [SerializeField] private ParticleSystem speedupParticleSystem;
+    [SerializeField] private float minFOV = 60f;
+    [SerializeField] private float maxFOV = 120f;
+    [SerializeField] private float zoomDuration = 1f;
+    [SerializeField] private float zoomSpeedModifier = 1f;
+    [SerializeField] private float resetFOVDuration = 1f;
 
-    CinemachineCamera cinemachineCamera;
-    Coroutine fovCoroutine;
+    private CinemachineCamera cinemachineCamera;
+    private Coroutine fovCoroutine;
 
     private void Awake()
     {
         cinemachineCamera = GetComponent<CinemachineCamera>();
+
+        if (speedupParticleSystem != null)
+        {
+            speedupParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+    }
+
+    private void LateUpdate()
+    {
+        EnsureTargetIsCurrentPlayer();
+    }
+
+    private void EnsureTargetIsCurrentPlayer()
+    {
+        PlayerRespawnManager respawnManager = FindFirstObjectByType<PlayerRespawnManager>();
+        if (respawnManager == null || respawnManager.CurrentPlayer == null || cinemachineCamera == null)
+        {
+            return;
+        }
+
+        Transform currentPlayerTransform = respawnManager.CurrentPlayer.transform;
+
+        if (cinemachineCamera.Target.TrackingTarget != currentPlayerTransform)
+        {
+            cinemachineCamera.Target.TrackingTarget = currentPlayerTransform;
+        }
     }
 
     public void ChangeCameraFOV(float speedAmount)
@@ -30,11 +56,6 @@ public class CameraController : MonoBehaviour
         }
 
         fovCoroutine = StartCoroutine(ChangeFOVRoutine(speedAmount));
-
-        if (speedAmount > 0)
-        {
-            speedupParticleSystem.Play();
-        }
     }
 
     public void ResetFOV()
@@ -47,7 +68,30 @@ public class CameraController : MonoBehaviour
             StopCoroutine(fovCoroutine);
         }
 
+        if (speedupParticleSystem != null)
+        {
+            speedupParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
         fovCoroutine = StartCoroutine(ResetFOVRoutine());
+    }
+
+    public void SetSpeedupEffectActive(bool isActive)
+    {
+        if (speedupParticleSystem == null)
+            return;
+
+        if (isActive)
+        {
+            if (!speedupParticleSystem.isPlaying)
+            {
+                speedupParticleSystem.Play();
+            }
+        }
+        else
+        {
+            speedupParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
     }
 
     private IEnumerator ChangeFOVRoutine(float speedAmount)

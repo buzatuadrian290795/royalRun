@@ -2,7 +2,7 @@ using System.Globalization;
 using TMPro;
 using UnityEngine;
 
-public class DistanceMeter : MonoBehaviour
+public class DistanceMeterUI : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI distanceText;
     [SerializeField] private LevelGenerator levelGenerator;

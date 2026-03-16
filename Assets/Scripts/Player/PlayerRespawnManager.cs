@@ -6,6 +6,7 @@ public class PlayerRespawnManager : MonoBehaviour
     [SerializeField] private Transform spawnPoint;
     [SerializeField] private EntryPoint entryPoint;
     [SerializeField] private LevelGenerator levelGenerator;
+    [SerializeField] private DistanceMeterUI distanceMeterUI;
 
     public GameObject CurrentPlayer { get; private set; }
 
@@ -20,9 +21,10 @@ public class PlayerRespawnManager : MonoBehaviour
         {
             levelGenerator.ResetMoveSpeed();
         }
-        else
+
+        if (distanceMeterUI != null)
         {
-            Debug.LogError("PlayerRespawnManager: LevelGenerator missing.");
+            distanceMeterUI.ResetDistance();
         }
 
         if (CurrentPlayer != null)
