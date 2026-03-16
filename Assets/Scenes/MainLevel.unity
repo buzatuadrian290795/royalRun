@@ -6914,11 +6914,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachinePositionComposer
   CameraDistance: 10
-  DeadZoneDepth: 0.5
+  DeadZoneDepth: 0
   Composition:
     ScreenPosition: {x: 0, y: 0}
     DeadZone:
-      Enabled: 0
+      Enabled: 1
       Size: {x: 0.2, y: 0.2}
     HardLimits:
       Enabled: 0
@@ -7399,12 +7399,13 @@ MonoBehaviour:
   - {fileID: 4979888908822816033, guid: 3ef6321d03f811e4da06608ddf352ae3, type: 3}
   - {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
   - {fileID: 4979888908822816033, guid: 52912242ee4985d42afcbb39776038cf, type: 3}
-  startingChunksAmount: 12
+  startingChunksAmount: 20
   chunkParent: {fileID: 494997740}
   chunkLength: 10
   moveSpeed: 8
   minMoveSpeed: 8
-  maxMoveSpeed: 24
+  maxMoveSpeed: 44
+  obstacleDensity: 0.4
 --- !u!4 &1953353384
 Transform:
   m_ObjectHideFlags: 0
