@@ -6,7 +6,7 @@ public class CameraController : MonoBehaviour
 {
     [SerializeField] private ParticleSystem speedupParticleSystem;
     [SerializeField] private float minFOV = 60f;
-    [SerializeField] private float maxFOV = 120f;
+    [SerializeField] private float maxFOV = 100f;
     [SerializeField] private float zoomDuration = 1f;
     [SerializeField] private float zoomSpeedModifier = 1f;
     [SerializeField] private float resetFOVDuration = 1f;
@@ -56,6 +56,11 @@ public class CameraController : MonoBehaviour
         }
 
         fovCoroutine = StartCoroutine(ChangeFOVRoutine(speedAmount));
+
+        if (speedAmount > 0)
+        {
+            speedupParticleSystem.Play();
+        }
     }
 
     public void ResetFOV()

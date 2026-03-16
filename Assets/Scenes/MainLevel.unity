@@ -2054,7 +2054,7 @@ ParticleSystem:
   emitterVelocityMode: 1
   looping: 0
   prewarm: 0
-  playOnAwake: 1
+  playOnAwake: 0
   useUnscaledTime: 0
   autoRandomSeed: 1
   startDelay:
@@ -2755,7 +2755,7 @@ ParticleSystem:
     sphericalDirectionAmount: 0
     randomPositionAmount: 0
     radius:
-      value: 5
+      value: 4.5
       mode: 0
       spread: 0
       speed:
@@ -6884,7 +6884,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraController
   speedupParticleSystem: {fileID: 1558040689}
   minFOV: 60
-  maxFOV: 120
+  maxFOV: 100
   zoomDuration: 1
   zoomSpeedModifier: 1
   resetFOVDuration: 2
@@ -7405,7 +7405,7 @@ MonoBehaviour:
   moveSpeed: 8
   minMoveSpeed: 8
   maxMoveSpeed: 44
-  obstacleDensity: 0.4
+  obstacleDensity: 0
 --- !u!4 &1953353384
 Transform:
   m_ObjectHideFlags: 0
