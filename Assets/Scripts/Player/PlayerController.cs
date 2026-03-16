@@ -15,6 +15,7 @@ public class PlayerController : IDisposable
 
     private readonly PlayerView m_PlayerView;
     private readonly RoadView m_RoadView;
+    private readonly LevelGenerator m_LevelGenerator;
 
     private int m_CurrentLane = 1;
     private bool m_IsChangingLane = false;
@@ -22,12 +23,13 @@ public class PlayerController : IDisposable
     private Vector2 m_SwipeStartPosition;
     private bool m_IsSwipeTracking;
 
-    private const float SwipeThreshold = 40f;
+    private const float SwipeThreshold = 35f;
 
-    public PlayerController(PlayerView playerView, RoadView roadView)
+    public PlayerController(PlayerView playerView, RoadView roadView, LevelGenerator levelGenerator)
     {
         m_PlayerView = playerView;
         m_RoadView = roadView;
+        m_LevelGenerator = levelGenerator;
 
         Init();
     }
@@ -47,6 +49,11 @@ public class PlayerController : IDisposable
 
     public async void Tick()
     {
+        if (m_LevelGenerator != null)
+        {
+            m_PlayerView.Animator.SetFloat("MoveSpeed", m_LevelGenerator.MoveSpeed);
+        }
+
         Movement movement = ReadInput();
         if (movement == Movement.None)
         {
@@ -205,11 +212,19 @@ public class PlayerController : IDisposable
             _ => m_CurrentLane
         };
 
-        m_PlayerView.Animator.SetBool("IsJumping", true);
+        if (movement == Movement.Left)
+        {
+            m_PlayerView.Animator.ResetTrigger("SwipeRight");
+            m_PlayerView.Animator.SetTrigger("SwipeLeft");
+        }
+        else if (movement == Movement.Right)
+        {
+            m_PlayerView.Animator.ResetTrigger("SwipeLeft");
+            m_PlayerView.Animator.SetTrigger("SwipeRight");
+        }
 
         await MovePlayerAsync();
 
-        m_PlayerView.Animator.SetBool("IsJumping", false);
         m_IsChangingLane = false;
     }
 

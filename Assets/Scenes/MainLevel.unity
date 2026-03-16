@@ -7403,9 +7403,9 @@ MonoBehaviour:
   chunkParent: {fileID: 494997740}
   chunkLength: 10
   moveSpeed: 8
-  minMoveSpeed: 8
-  maxMoveSpeed: 44
-  obstacleDensity: 0
+  minMoveSpeed: 10
+  maxMoveSpeed: 46
+  obstacleDensity: 0.5
 --- !u!4 &1953353384
 Transform:
   m_ObjectHideFlags: 0

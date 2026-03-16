@@ -3,6 +3,7 @@ using UnityEngine;
 public class EntryPoint : MonoBehaviour
 {
     [SerializeField] private RoadView roadView;
+    [SerializeField] private readonly LevelGenerator m_LevelGenerator;
 
     private PlayerController m_PlayerController;
 
@@ -20,7 +21,7 @@ public class EntryPoint : MonoBehaviour
             m_PlayerController.Dispose();
         }
 
-        m_PlayerController = new PlayerController(playerView, roadView);
+        m_PlayerController = new PlayerController(playerView, roadView, m_LevelGenerator);
     }
 
     private void Update()

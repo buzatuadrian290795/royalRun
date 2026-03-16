@@ -1,6 +1,9 @@
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class MenuUI : MonoBehaviour
 {
@@ -14,17 +17,20 @@ public class MenuUI : MonoBehaviour
 
     bool isMenuOpen;
 
+    private void Awake()
+    {
+        if (pauseMenu == null) Debug.LogWarning("MenuUI: pauseMenu is not set.");
+        if (xButton == null) Debug.LogWarning("MenuUI: xButton is not set.");
+        if (resumeButton == null) Debug.LogWarning("MenuUI: resumeButton is not set.");
+        if (exitButton == null) Debug.LogWarning("MenuUI: exitButton is not set.");
+
+        if (xButton != null) xButton.onClick.AddListener(ToggleMenu);
+        if (resumeButton != null) resumeButton.onClick.AddListener(ResumeGame);
+        if (exitButton != null) exitButton.onClick.AddListener(QuitGame);
+    }
+
     private void Start()
     {
-        if (xButton != null)
-            xButton.onClick.AddListener(ToggleMenu);
-
-        if (resumeButton != null)
-            resumeButton.onClick.AddListener(ResumeGame);
-
-        if (exitButton != null)
-            exitButton.onClick.AddListener(QuitGame);
-
         ResumeGame();
     }
 
@@ -48,7 +54,7 @@ public class MenuUI : MonoBehaviour
 
     public void ToggleMenu()
     {
-        if (isMenuOpen)
+        if (pauseMenu != null && pauseMenu.activeSelf)
             ResumeGame();
         else
             PauseGame();
@@ -59,8 +65,12 @@ public class MenuUI : MonoBehaviour
         Time.timeScale = 1f;
         Application.Quit();
 
-#if UNITY_EDITOR
-        EditorApplication.isPlaying = false;
-#endif
+    #if UNITY_EDITOR
+            EditorApplication.isPlaying = false;
+    #endif
+    }
+    private void OnDestroy()
+    {
+        Time.timeScale = 1f;
     }
 }
