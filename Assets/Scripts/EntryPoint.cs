@@ -6,6 +6,13 @@ public class EntryPoint : MonoBehaviour
 
     private PlayerController m_PlayerController;
 
+    private void Awake()
+    {
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
+    }
+
     public void InitializePlayer(PlayerView playerView)
     {
         if (m_PlayerController != null)

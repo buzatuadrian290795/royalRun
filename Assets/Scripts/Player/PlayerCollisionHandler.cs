@@ -2,11 +2,11 @@ using UnityEngine;
 
 public class PlayerCollisionHandler : MonoBehaviour
 {
-    [SerializeField] private float invulnerabilityDuration = 1f;
-    [SerializeField] private float blinkInterval = 0.1f;
+    [SerializeField] private PlayerView playerView;
     [SerializeField] private Renderer meshRenderer;
     [SerializeField] private RagdollController ragdollController;
-    
+    //[SerializeField] private float adjustChangeMoveSpeedAmount = 2f;
+
     private int playerLayer;
     private int obstacleLayer;
     private bool isInvulnerable;
@@ -16,13 +16,36 @@ public class PlayerCollisionHandler : MonoBehaviour
 
     private void Awake()
     {
+        if (playerView == null)
+        {
+            playerView = GetComponent<PlayerView>();
+        }
+
+        if (playerView == null)
+        {
+            Debug.LogError("PlayerCollisionHandler: PlayerView not found.");
+        }
+
+        if (meshRenderer == null)
+        {
+            Debug.LogError("PlayerCollisionHandler: Mesh Renderer not set.");
+        }
+
+        if (ragdollController == null)
+        {
+            Debug.LogError("PlayerCollisionHandler: RagdollController not set.");
+        }
+
         playerLayer = LayerMask.NameToLayer("Player");
         obstacleLayer = LayerMask.NameToLayer("Obstacle");
     }
 
     private void FixedUpdate()
     {
-        if (!isInvulnerable) return;
+        if (!isInvulnerable)
+        {
+            return;
+        }
 
         invulnerabilityTimer -= Time.fixedDeltaTime;
         blinkTimer -= Time.fixedDeltaTime;
@@ -31,9 +54,7 @@ public class PlayerCollisionHandler : MonoBehaviour
         {
             visible = !visible;
             SetRenderersVisible(visible);
-            Debug.Log("Blink: " + visible);
-
-            blinkTimer = blinkInterval;
+            blinkTimer = playerView.BlinkInterval;
         }
 
         if (invulnerabilityTimer <= 0f)
@@ -44,10 +65,20 @@ public class PlayerCollisionHandler : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        //Debug.LogError(isInvulnerable);
-        if (isInvulnerable) return;
-        if (ragdollController == null) return;
-        if (ragdollController.IsRagdollActive) return;
+        if (isInvulnerable)
+        {
+            return;
+        }
+
+        if (ragdollController == null)
+        {
+            return;
+        }
+
+        if (ragdollController.IsRagdollActive)
+        {
+            return;
+        }
 
         if (collision.gameObject.CompareTag("Obstacle"))
         {
@@ -58,10 +89,20 @@ public class PlayerCollisionHandler : MonoBehaviour
 
     public void StartInvulnerability()
     {
-        if (isInvulnerable) return;
-
-        Debug.Log("StartInvulnerability ENTER");
         Debug.Log("Invulnerability START");
+        Debug.Log("Duration = " + playerView.InvulnerabilityDuration);
+        Debug.Log("BlinkInterval = " + playerView.BlinkInterval);
+
+        if (isInvulnerable)
+        {
+            return;
+        }
+
+        if (playerView == null)
+        {
+            Debug.LogError("PlayerCollisionHandler: Cannot start invulnerability because PlayerView is missing.");
+            return;
+        }
 
         isInvulnerable = true;
 
@@ -70,8 +111,8 @@ public class PlayerCollisionHandler : MonoBehaviour
             Physics.IgnoreLayerCollision(playerLayer, obstacleLayer, true);
         }
 
-        invulnerabilityTimer = invulnerabilityDuration;
-        blinkTimer = blinkInterval;
+        invulnerabilityTimer = playerView.InvulnerabilityDuration;
+        blinkTimer = playerView.BlinkInterval;
         visible = true;
         SetRenderersVisible(true);
     }
@@ -86,12 +127,13 @@ public class PlayerCollisionHandler : MonoBehaviour
         }
 
         isInvulnerable = false;
-
-        Debug.Log("Invulnerability END");
     }
 
     private void SetRenderersVisible(bool isVisible)
     {
-        meshRenderer.enabled = isVisible;
+        if (meshRenderer != null)
+        {
+            meshRenderer.enabled = isVisible;
+        }
     }
 }

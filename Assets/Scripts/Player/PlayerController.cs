@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
@@ -15,9 +16,13 @@ public class PlayerController : IDisposable
     private readonly PlayerView m_PlayerView;
     private readonly RoadView m_RoadView;
 
-    private float m_HalfScreenWidth;
     private int m_CurrentLane = 1;
     private bool m_IsChangingLane = false;
+
+    private Vector2 m_SwipeStartPosition;
+    private bool m_IsSwipeTracking;
+
+    private const float SwipeThreshold = 40f;
 
     public PlayerController(PlayerView playerView, RoadView roadView)
     {
@@ -29,51 +34,156 @@ public class PlayerController : IDisposable
 
     private void Init()
     {
-        m_HalfScreenWidth = Screen.width * 0.5f;
-        m_PlayerView.transform.position = Vector3.zero;
+        Vector3 startPos = m_PlayerView.transform.position;
+        startPos.x = m_RoadView.LanePositions[m_CurrentLane];
+        m_PlayerView.transform.position = startPos;
 
         EnhancedTouchSupport.Enable();
+
+#if UNITY_EDITOR
         TouchSimulation.Enable();
+#endif
     }
 
-    public void Tick()
+    public async void Tick()
     {
-        var movement = ReadInput();
+        Movement movement = ReadInput();
         if (movement == Movement.None)
         {
             return;
         }
-    
-        HandleMovementAsync(movement);
+
+        await HandleMovementAsync(movement);
     }
 
     public void Dispose()
     {
+#if UNITY_EDITOR
         TouchSimulation.Disable();
+#endif
         EnhancedTouchSupport.Disable();
     }
 
     private Movement ReadInput()
     {
-        if (m_IsChangingLane || Touch.activeTouches.Count == 0)
+        if (m_IsChangingLane)
+        {
+            return Movement.None;
+        }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+        Movement mouseMovement = ReadMouseSwipe();
+        if (mouseMovement != Movement.None)
+        {
+            return mouseMovement;
+        }
+#endif
+
+        return ReadTouchSwipe();
+    }
+
+    private Movement ReadTouchSwipe()
+    {
+        if (Touch.activeTouches.Count == 0)
         {
             return Movement.None;
         }
 
         var touch = Touch.activeTouches[0];
-        if (touch.phase != UnityEngine.InputSystem.TouchPhase.Began)
+
+        if (touch.phase == UnityEngine.InputSystem.TouchPhase.Began)
+        {
+            m_SwipeStartPosition = touch.screenPosition;
+            m_IsSwipeTracking = true;
+            return Movement.None;
+        }
+
+        if (!m_IsSwipeTracking)
         {
             return Movement.None;
         }
 
-        if (touch.screenPosition.x <= m_HalfScreenWidth && m_CurrentLane != 0)
+        if (touch.phase == UnityEngine.InputSystem.TouchPhase.Moved ||
+            touch.phase == UnityEngine.InputSystem.TouchPhase.Ended)
         {
-            return Movement.Left;
+            Vector2 swipeDelta = touch.screenPosition - m_SwipeStartPosition;
+
+            if (Mathf.Abs(swipeDelta.x) < SwipeThreshold)
+            {
+                return Movement.None;
+            }
+
+            if (Mathf.Abs(swipeDelta.x) < Mathf.Abs(swipeDelta.y))
+            {
+                return Movement.None;
+            }
+
+            m_IsSwipeTracking = false;
+
+            if (swipeDelta.x < 0f && m_CurrentLane > 0)
+            {
+                return Movement.Left;
+            }
+
+            if (swipeDelta.x > 0f && m_CurrentLane < m_RoadView.LanePositions.Length - 1)
+            {
+                return Movement.Right;
+            }
         }
 
-        if (touch.screenPosition.x >= m_HalfScreenWidth && m_CurrentLane != 2)
+        if (touch.phase == UnityEngine.InputSystem.TouchPhase.Canceled)
         {
-            return Movement.Right;
+            m_IsSwipeTracking = false;
+        }
+
+        return Movement.None;
+    }
+
+    private Movement ReadMouseSwipe()
+    {
+        Mouse mouse = Mouse.current;
+        if (mouse == null)
+        {
+            return Movement.None;
+        }
+
+        if (mouse.leftButton.wasPressedThisFrame)
+        {
+            m_SwipeStartPosition = mouse.position.ReadValue();
+            m_IsSwipeTracking = true;
+            return Movement.None;
+        }
+
+        if (!m_IsSwipeTracking)
+        {
+            return Movement.None;
+        }
+
+        Vector2 currentPosition = mouse.position.ReadValue();
+        Vector2 swipeDelta = currentPosition - m_SwipeStartPosition;
+
+        if (mouse.leftButton.isPressed)
+        {
+            if (Mathf.Abs(swipeDelta.x) >= SwipeThreshold &&
+                Mathf.Abs(swipeDelta.x) > Mathf.Abs(swipeDelta.y))
+            {
+                m_IsSwipeTracking = false;
+
+                if (swipeDelta.x < 0f && m_CurrentLane > 0)
+                {
+                    return Movement.Left;
+                }
+
+                if (swipeDelta.x > 0f && m_CurrentLane < m_RoadView.LanePositions.Length - 1)
+                {
+                    return Movement.Right;
+                }
+            }
+        }
+
+        if (mouse.leftButton.wasReleasedThisFrame)
+        {
+            m_IsSwipeTracking = false;
         }
 
         return Movement.None;
@@ -87,6 +197,7 @@ public class PlayerController : IDisposable
         }
 
         m_IsChangingLane = true;
+
         m_CurrentLane = movement switch
         {
             Movement.Left => m_CurrentLane - 1,
@@ -104,23 +215,29 @@ public class PlayerController : IDisposable
 
     private async Awaitable MovePlayerAsync()
     {
-        var time = 0f;
-        var startPosition = m_PlayerView.RigidBody.position.x;
-        var destination = m_RoadView.LanePositions[m_CurrentLane];
-        var duration = m_RoadView.LaneChangeDuration;
+        float time = 0f;
+        float startX = m_PlayerView.RigidBody.position.x;
+        float destinationX = m_RoadView.LanePositions[m_CurrentLane];
+        float duration = m_RoadView.LaneChangeDuration;
 
         while (time < duration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
         {
-            var position = Mathf.Lerp(startPosition, destination, time / duration);
-            m_PlayerView.RigidBody.MovePosition(new Vector3
-            {
-                x = position,
-                y = m_PlayerView.RigidBody.position.y,
-                z = m_PlayerView.RigidBody.position.z
-            });
+            float newX = Mathf.Lerp(startX, destinationX, time / duration);
+
+            m_PlayerView.RigidBody.MovePosition(new Vector3(
+                newX,
+                m_PlayerView.RigidBody.position.y,
+                m_PlayerView.RigidBody.position.z
+            ));
 
             await Awaitable.NextFrameAsync();
             time += Time.deltaTime;
         }
+
+        m_PlayerView.RigidBody.MovePosition(new Vector3(
+            destinationX,
+            m_PlayerView.RigidBody.position.y,
+            m_PlayerView.RigidBody.position.z
+        ));
     }
 }

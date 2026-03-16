@@ -7,6 +7,7 @@ public class RagdollController : MonoBehaviour
     [SerializeField] Collider mainCollider;
     [SerializeField] PlayerView playerMovementScript;
     [SerializeField] PlayerCollisionHandler collisionHandler;
+    [SerializeField] CameraController cameraController;
     [SerializeField] float respawnDelay = 2f;
     [SerializeField] float knockbackForce = 8f;
     [SerializeField] float knockbackUpwardForce = 2f;
@@ -36,6 +37,9 @@ public class RagdollController : MonoBehaviour
 
         if (collisionHandler == null)
             collisionHandler = GetComponent<PlayerCollisionHandler>();
+
+        if (cameraController == null)
+            cameraController = FindFirstObjectByType<CameraController>();
 
         CacheRagdollParts();
         DisableRagdollImmediate();
@@ -116,6 +120,9 @@ public class RagdollController : MonoBehaviour
         respawnScheduled = true;
         respawnTimer = respawnDelay;
 
+        if (cameraController != null)
+            cameraController.ResetFOV();
+
         if (animator != null)
             animator.enabled = false;
 
@@ -127,7 +134,7 @@ public class RagdollController : MonoBehaviour
 
         if (mainRigidbody != null)
         {
-            mainRigidbody.useGravity = true;
+            mainRigidbody.useGravity = false;
             mainRigidbody.isKinematic = false;
             mainRigidbody.linearVelocity = Vector3.zero;
             mainRigidbody.angularVelocity = Vector3.zero;
