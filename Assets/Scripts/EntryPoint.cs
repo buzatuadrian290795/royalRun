@@ -9,6 +9,8 @@ public class EntryPoint : MonoBehaviour
     private void Awake()
     {
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
     }
 
     public void InitializePlayer(PlayerView playerView)
