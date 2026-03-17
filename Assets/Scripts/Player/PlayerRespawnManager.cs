@@ -17,42 +17,25 @@ public class PlayerRespawnManager : MonoBehaviour
 
     public void SpawnPlayer()
     {
-        if (levelGenerator != null)
-        {
-            levelGenerator.ResetMoveSpeed();
-        }
-
-        if (distanceMeterUI != null)
-        {
-            distanceMeterUI.ResetDistance();
-        }
+        levelGenerator?.ResetMoveSpeed();
+        distanceMeterUI?.ResetDistance();
 
         if (CurrentPlayer != null)
-        {
             Destroy(CurrentPlayer);
-        }
 
         CurrentPlayer = Instantiate(playerPrefab, spawnPoint.position, spawnPoint.rotation);
 
         PlayerView playerView = CurrentPlayer.GetComponent<PlayerView>();
         PlayerCollisionHandler collisionHandler = CurrentPlayer.GetComponent<PlayerCollisionHandler>();
+        RagdollController ragdoll = CurrentPlayer.GetComponent<RagdollController>();
 
         if (playerView != null && entryPoint != null)
-        {
             entryPoint.InitializePlayer(playerView);
-        }
         else
-        {
             Debug.LogError("PlayerRespawnManager: PlayerView or EntryPoint missing.");
-        }
 
-        if (collisionHandler != null)
-        {
-            collisionHandler.StartInvulnerability();
-        }
-        else
-        {
-            Debug.LogError("PlayerRespawnManager: PlayerCollisionHandler missing.");
-        }
+        collisionHandler?.StartInvulnerability();
+
+        ragdoll.Init(this);
     }
 }

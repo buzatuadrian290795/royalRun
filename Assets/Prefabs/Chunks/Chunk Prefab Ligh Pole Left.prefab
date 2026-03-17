@@ -183,6 +183,7 @@ MonoBehaviour:
   - {fileID: 4280226272728789475, guid: fcbfe1666e868a249947825dc505cfbf, type: 3}
   applePrefab: {fileID: 1923806007615572051, guid: 4e8d30bcbaeb35743ae12f059061a0fc, type: 3}
   coinPrefab: {fileID: 6882302745150051159, guid: a8268d37e10554c41acbf63294686281, type: 3}
+  obstacleDensity: 0.5
   minObstaclesToSpawn: 0
   maxObstaclesToSpawn: 2
   appleSpawnChance: 0.3

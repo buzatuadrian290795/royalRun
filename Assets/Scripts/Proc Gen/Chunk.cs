@@ -27,6 +27,8 @@ public class Chunk : MonoBehaviour
 
     const int LaneCount = 3;
 
+    private LevelGenerator m_LevelGenerator;
+
     int availableLaneCount;
     readonly int[] availableLanes = new int[LaneCount] { 0, 1, 2 };
 
@@ -54,6 +56,22 @@ public class Chunk : MonoBehaviour
         SpawnObstacles();
         SpawnApple();
         SpawnCoins();
+    }
+
+    public void Init(LevelGenerator levelGenerator)
+    {
+        m_LevelGenerator = levelGenerator;
+    }
+    private void SpawnObject(GameObject prefab, float x, float y, float z)
+    {
+        if (prefab == null) return;
+
+        GameObject obj = Instantiate(prefab, new Vector3(x, y, z),
+                                     Quaternion.identity, cachedTransform);
+
+        Pickup pickup = obj.GetComponent<Pickup>();
+        if (pickup != null)
+            pickup.Init(m_LevelGenerator);
     }
 
     private void CacheChunkPosition()
@@ -164,13 +182,13 @@ public class Chunk : MonoBehaviour
         availableLaneCount++;
     }
 
-    private void SpawnObject(GameObject prefab, float x, float y, float z)
-    {
-        if (prefab == null)
-            return;
+    //private void SpawnObject(GameObject prefab, float x, float y, float z)
+    //{
+    //    if (prefab == null)
+    //        return;
 
-        Instantiate(prefab, new Vector3(x, y, z), Quaternion.identity, cachedTransform);
-    }
+    //    Instantiate(prefab, new Vector3(x, y, z), Quaternion.identity, cachedTransform);
+    //}
 
     public void SetObstacleDensity(float density)
     {

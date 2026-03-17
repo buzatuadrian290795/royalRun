@@ -15,7 +15,7 @@ public class MenuUI : MonoBehaviour
     [SerializeField] Button resumeButton;
     [SerializeField] Button exitButton;
 
-    bool isMenuOpen;
+    //bool isMenuOpen;
 
     private void Awake()
     {
@@ -39,7 +39,7 @@ public class MenuUI : MonoBehaviour
         if (pauseMenu != null)
             pauseMenu.SetActive(true);
 
-        isMenuOpen = true;
+        //isMenuOpen = true;
         Time.timeScale = 0f;
     }
 
@@ -48,7 +48,7 @@ public class MenuUI : MonoBehaviour
         if (pauseMenu != null)
             pauseMenu.SetActive(false);
 
-        isMenuOpen = false;
+        //isMenuOpen = false;
         Time.timeScale = 1f;
     }
 

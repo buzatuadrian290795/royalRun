@@ -816,6 +816,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EntryPoint
   roadView: {fileID: 494997741}
+  m_LevelGenerator: {fileID: 1953353383}
 --- !u!4 &722481367
 Transform:
   m_ObjectHideFlags: 0
@@ -1357,7 +1358,7 @@ MonoBehaviour:
   spawnPoint: {fileID: 1640531582}
   entryPoint: {fileID: 722481366}
   levelGenerator: {fileID: 1953353383}
-  distanceMeterUI: {fileID: 0}
+  distanceMeterUI: {fileID: 1488083877}
 --- !u!4 &1197498995
 Transform:
   m_ObjectHideFlags: 0
@@ -1833,7 +1834,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DistanceMeter
   distanceText: {fileID: 914623254}
   levelGenerator: {fileID: 1953353383}
-  playerRespawnManager: {fileID: 1197498994}
+  playerRespawnManager: {fileID: 0}
+  speedToDistanceRatio: 4
 --- !u!4 &1488083878
 Transform:
   m_ObjectHideFlags: 0
@@ -6803,6 +6805,7 @@ GameObject:
   - component: {fileID: 1706791966}
   - component: {fileID: 1706791969}
   - component: {fileID: 1706791968}
+  - component: {fileID: 1706791970}
   - component: {fileID: 1706791967}
   m_Layer: 0
   m_Name: Cinemachine Camera
@@ -6919,7 +6922,7 @@ MonoBehaviour:
     ScreenPosition: {x: 0, y: 0}
     DeadZone:
       Enabled: 1
-      Size: {x: 0.2, y: 0.2}
+      Size: {x: 0.2, y: 0}
     HardLimits:
       Enabled: 0
       Size: {x: 0.8, y: 0.8}
@@ -6932,6 +6935,30 @@ MonoBehaviour:
     Time: 0
     Smoothing: 0
     IgnoreY: 0
+--- !u!114 &1706791970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1706791964}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00b2d199b96b516448144ab30fb26aed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineImpulseListener
+  ApplyAfter: 2
+  ChannelMask: 1
+  Gain: 1
+  Use2DDistance: 0
+  UseCameraSpace: 1
+  SignalCombinationMode: 0
+  ReactionSettings:
+    m_SecondaryNoise: {fileID: 0}
+    AmplitudeGain: 1
+    FrequencyGain: 1
+    Duration: 1
+    m_NoiseOffsets: {x: 0, y: 0, z: 0}
 --- !u!1 &1752187145
 GameObject:
   m_ObjectHideFlags: 0
@@ -7405,7 +7432,7 @@ MonoBehaviour:
   moveSpeed: 8
   minMoveSpeed: 10
   maxMoveSpeed: 46
-  obstacleDensity: 0.5
+  obstacleDensity: 0.3
 --- !u!4 &1953353384
 Transform:
   m_ObjectHideFlags: 0

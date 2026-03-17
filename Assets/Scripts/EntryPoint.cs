@@ -3,7 +3,7 @@ using UnityEngine;
 public class EntryPoint : MonoBehaviour
 {
     [SerializeField] private RoadView roadView;
-    [SerializeField] private readonly LevelGenerator m_LevelGenerator;
+    [SerializeField] private LevelGenerator m_LevelGenerator;
 
     private PlayerController m_PlayerController;
 

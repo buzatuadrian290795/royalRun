@@ -98,6 +98,7 @@ public class LevelGenerator : MonoBehaviour
         if (chunkScript != null)
         {
             chunkScript.SetObstacleDensity(obstacleDensity);
+            chunkScript.Init(this);
         }
 
         chunks.Add(newChunk);

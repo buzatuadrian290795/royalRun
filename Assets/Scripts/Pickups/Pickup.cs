@@ -3,17 +3,23 @@ using UnityEngine;
 public abstract class Pickup : MonoBehaviour
 {
     [SerializeField] float rotationSpeed = 100f;
+    private const string PlayerTag = "Player";
 
-    const string playerString = "Player";
+    protected LevelGenerator m_LevelGenerator;
+
+    public void Init(LevelGenerator levelGenerator)
+    {
+        m_LevelGenerator = levelGenerator;
+    }
 
     private void FixedUpdate()
     {
-        transform.Rotate(0f, rotationSpeed * Time.deltaTime, 0f);
+        transform.Rotate(0f, rotationSpeed * Time.fixedDeltaTime, 0f);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.CompareTag(playerString))
+        if (other.CompareTag(PlayerTag))
         {
             OnPickup();
             Destroy(gameObject);
