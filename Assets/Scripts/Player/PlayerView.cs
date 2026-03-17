@@ -8,14 +8,14 @@ public class PlayerView : MonoBehaviour
     [field: SerializeField] 
     public Rigidbody RigidBody { get; private set; }
 
-    // [field: SerializeField]
-    // public SkinnedMeshRenderer SkinnedMeshRenderer { get; private set; }
-
     [field: SerializeField] 
     public float InvulnerabilityDuration { get; private set; } = 1f;
 
     [field: SerializeField] 
     public float BlinkInterval { get; private set; } = 0.1f;
+
+    [SerializeField] public float GroundY = 0f;
+    [SerializeField] public float RollY = -0.5f;
 
     private void Awake()
     {
@@ -28,10 +28,5 @@ public class PlayerView : MonoBehaviour
         {
             Debug.LogError("RigidBody: Rigidbody not set.");
         }
-
-        // if (SkinnedMeshRenderer == null)
-        // {
-        //     Debug.LogError("SkinnedMeshRenderer: Rigidbody not set.");
-        // }
     }
 }

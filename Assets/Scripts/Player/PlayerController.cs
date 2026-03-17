@@ -1,4 +1,5 @@
 ﻿using System;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
@@ -28,7 +29,9 @@ public class PlayerController : IDisposable
     private static readonly int s_JumpHash = Animator.StringToHash("Jump");
     private static readonly int s_RollHash = Animator.StringToHash("Roll");
 
-    private readonly float m_GroundY;
+    private float GroundY = 0f;
+    private const float RollY = -0.5f;
+
     private readonly float m_OriginalCapsuleHeight;
     private readonly Vector3 m_OriginalCapsuleCenter;
 
@@ -64,21 +67,21 @@ public class PlayerController : IDisposable
             m_OriginalCapsuleHeight = m_Capsule.height;
             m_OriginalCapsuleCenter = m_Capsule.center;
 
-            m_RollCapsuleHeight = m_OriginalCapsuleHeight * 0.5f;
+            m_RollCapsuleHeight = m_OriginalCapsuleHeight;
             m_RollCapsuleCenter = new Vector3(
                 m_OriginalCapsuleCenter.x,
-                m_OriginalCapsuleCenter.y * 0.5f,
+                m_OriginalCapsuleCenter.y * 0.8f,
                 m_OriginalCapsuleCenter.z
             );
         }
 
         m_CurrentLane = 1;
-        m_GroundY = m_Rigidbody.position.y;
+        GroundY = m_Rigidbody.position.y;
 
         Init();
     }
 
-    private void Init()
+    private async void Init()
     {
         Vector3 startPos = m_PlayerView.transform.position;
         startPos.x = m_RoadView.LanePositions[m_CurrentLane];
@@ -88,6 +91,11 @@ public class PlayerController : IDisposable
 #if UNITY_EDITOR
         TouchSimulation.Enable();
 #endif
+
+        await Awaitable.NextFrameAsync();
+        await Awaitable.NextFrameAsync();
+        GroundY = m_Rigidbody.position.y;
+        Debug.Log($"GroundY capturat: {GroundY}");
     }
 
     public async void Tick()
@@ -276,18 +284,24 @@ public class PlayerController : IDisposable
 
         while (time < JumpDuration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
         {
-            MoveY(m_GroundY + JumpHeight * Mathf.Sin(Mathf.PI * (time * invDuration)));
+            MoveY(GroundY + JumpHeight * Mathf.Sin(Mathf.PI * (time * invDuration)));
             await Awaitable.NextFrameAsync();
             time += Time.deltaTime;
         }
 
-        MoveY(m_GroundY);
+        MoveY(GroundY);
     }
 
     private async Awaitable RollAsync()
     {
         m_Rigidbody.useGravity = false;
-        m_Rigidbody.isKinematic = true;
+        m_Rigidbody.linearVelocity = Vector3.zero;
+        m_Rigidbody.isKinematic = false; 
+
+        int playerLayer = LayerMask.NameToLayer("Player");
+        int groundLayer = LayerMask.NameToLayer("Default"); 
+
+        Physics.IgnoreLayerCollision(playerLayer, groundLayer, true);
 
         if (m_Capsule != null)
         {
@@ -295,12 +309,11 @@ public class PlayerController : IDisposable
             m_Capsule.center = m_RollCapsuleCenter;
         }
 
-        float targetY = m_GroundY - RollDepth;
         bool jumpQueued = false;
-
-        await LerpYAsync(m_GroundY, targetY, RollDownTime);
-
         float elapsed = 0f;
+
+        await LerpYAsync(GroundY, RollY, RollDownTime);
+
         while (elapsed < RollHoldTime && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
         {
             if (ReadInputDirect() == Movement.Jump)
@@ -312,14 +325,16 @@ public class PlayerController : IDisposable
             elapsed += Time.deltaTime;
         }
 
-        await LerpYAsync(targetY, m_GroundY, RollUpTime);
-        MoveY(m_GroundY);
+        await LerpYAsync(RollY, GroundY, RollUpTime);
+        MoveY(GroundY);
 
         if (m_Capsule != null)
         {
             m_Capsule.height = m_OriginalCapsuleHeight;
             m_Capsule.center = m_OriginalCapsuleCenter;
         }
+
+        Physics.IgnoreLayerCollision(playerLayer, groundLayer, false);
 
         m_Rigidbody.isKinematic = false;
         m_Rigidbody.useGravity = false;
@@ -330,7 +345,7 @@ public class PlayerController : IDisposable
         {
             m_Rigidbody.position = new Vector3(
                 m_Rigidbody.position.x,
-                m_GroundY,
+                GroundY,
                 m_Rigidbody.position.z
             );
             m_Animator.SetTrigger(s_JumpHash);
