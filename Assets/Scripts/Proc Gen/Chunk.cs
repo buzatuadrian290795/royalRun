@@ -8,6 +8,7 @@ public class Chunk : MonoBehaviour
     [SerializeField] GameObject coinPrefab;
 
     [Header("Obstacle Spawn")]
+    [SerializeField, Range(0f, 1f)] private float obstacleDensity = 0.5f;
     [SerializeField] private int minObstaclesToSpawn = 0;
     [SerializeField] private int maxObstaclesToSpawn = 2;
 
@@ -26,6 +27,8 @@ public class Chunk : MonoBehaviour
 
     const int LaneCount = 3;
 
+    private LevelGenerator m_LevelGenerator;
+
     int availableLaneCount;
     readonly int[] availableLanes = new int[LaneCount] { 0, 1, 2 };
 
@@ -33,6 +36,12 @@ public class Chunk : MonoBehaviour
     private float chunkX;
     private float chunkY;
     private float chunkZ;
+
+    public void SetObstacleSpawnRange(int minObstacles, int maxObstacles)
+    {
+        minObstaclesToSpawn = Mathf.Max(0, minObstacles);
+        maxObstaclesToSpawn = Mathf.Max(minObstaclesToSpawn, maxObstacles);
+    }
 
     private void Awake()
     {
@@ -47,6 +56,22 @@ public class Chunk : MonoBehaviour
         SpawnObstacles();
         SpawnApple();
         SpawnCoins();
+    }
+
+    public void Init(LevelGenerator levelGenerator)
+    {
+        m_LevelGenerator = levelGenerator;
+    }
+    private void SpawnObject(GameObject prefab, float x, float y, float z)
+    {
+        if (prefab == null) return;
+
+        GameObject obj = Instantiate(prefab, new Vector3(x, y, z),
+                                     Quaternion.identity, cachedTransform);
+
+        Pickup pickup = obj.GetComponent<Pickup>();
+        if (pickup != null)
+            pickup.Init(m_LevelGenerator);
     }
 
     private void CacheChunkPosition()
@@ -73,7 +98,9 @@ public class Chunk : MonoBehaviour
         int maxSpawnAllowed = Mathf.Min(maxObstaclesToSpawn, obstacleLanes.Length, availableLaneCount);
         int minSpawnAllowed = Mathf.Clamp(minObstaclesToSpawn, 0, maxSpawnAllowed);
 
-        int obstaclesToSpawn = Random.Range(minSpawnAllowed, maxSpawnAllowed + 1);
+        int obstaclesToSpawn = Mathf.RoundToInt(
+            Mathf.Lerp(minSpawnAllowed, maxSpawnAllowed, obstacleDensity)
+        );
 
         for (int i = 0; i < obstaclesToSpawn; i++)
         {
@@ -155,11 +182,16 @@ public class Chunk : MonoBehaviour
         availableLaneCount++;
     }
 
-    private void SpawnObject(GameObject prefab, float x, float y, float z)
-    {
-        if (prefab == null)
-            return;
+    //private void SpawnObject(GameObject prefab, float x, float y, float z)
+    //{
+    //    if (prefab == null)
+    //        return;
 
-        Instantiate(prefab, new Vector3(x, y, z), Quaternion.identity, cachedTransform);
+    //    Instantiate(prefab, new Vector3(x, y, z), Quaternion.identity, cachedTransform);
+    //}
+
+    public void SetObstacleDensity(float density)
+    {
+        obstacleDensity = Mathf.Clamp01(density);
     }
 }

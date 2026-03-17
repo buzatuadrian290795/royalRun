@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Cinemachine;
+using UnityEngine;
 
 public class RagdollController : MonoBehaviour
 {
@@ -12,34 +13,40 @@ public class RagdollController : MonoBehaviour
     [SerializeField] float knockbackForce = 8f;
     [SerializeField] float knockbackUpwardForce = 2f;
 
-    Rigidbody[] ragdollRigidbodies;
-    Collider[] ragdollColliders;
+    [SerializeField] float screenShakeForce = 2f;
 
-    bool isRagdollActive;
-    bool respawnScheduled;
-    float respawnTimer;
+    private CinemachineImpulseSource m_ImpulseSource;
+    private Rigidbody[] ragdollRigidbodies;
+    private Collider[] ragdollColliders;
+    private PlayerRespawnManager m_RespawnManager;
+
+    private bool isRagdollActive;
+    private bool respawnScheduled;
+    private float respawnTimer;
 
     public bool IsRagdollActive => isRagdollActive;
+
+    public void Init(PlayerRespawnManager respawnManager)
+    {
+        m_RespawnManager = respawnManager;
+    }
 
     private void Awake()
     {
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
-
         if (mainRigidbody == null)
             mainRigidbody = GetComponent<Rigidbody>();
-
         if (mainCollider == null)
             mainCollider = GetComponent<Collider>();
-
         if (playerMovementScript == null)
             playerMovementScript = GetComponent<PlayerView>();
-
         if (collisionHandler == null)
             collisionHandler = GetComponent<PlayerCollisionHandler>();
-
         if (cameraController == null)
             cameraController = FindFirstObjectByType<CameraController>();
+
+        m_ImpulseSource = GetComponent<CinemachineImpulseSource>();
 
         CacheRagdollParts();
         DisableRagdollImmediate();
@@ -51,22 +58,15 @@ public class RagdollController : MonoBehaviour
             return;
 
         respawnTimer -= Time.fixedDeltaTime;
-
         if (respawnTimer > 0f)
             return;
 
         respawnScheduled = false;
 
-        PlayerRespawnManager respawnManager = FindFirstObjectByType<PlayerRespawnManager>();
-
-        if (respawnManager != null)
-        {
-            respawnManager.SpawnPlayer();
-        }
+        if (m_RespawnManager != null)
+            m_RespawnManager.SpawnPlayer();
         else
-        {
-            Debug.LogError("RagdollController: PlayerRespawnManager not found in scene.");
-        }
+            Debug.LogError("RagdollController: RespawnManager not injected — apeleaza Init().");
 
         Destroy(gameObject);
     }
@@ -76,61 +76,43 @@ public class RagdollController : MonoBehaviour
         Rigidbody[] allRigidbodies = GetComponentsInChildren<Rigidbody>(true);
         Collider[] allColliders = GetComponentsInChildren<Collider>(true);
 
-        int ragdollRbCount = 0;
+        int rbCount = 0;
         for (int i = 0; i < allRigidbodies.Length; i++)
-        {
-            if (allRigidbodies[i] != null && allRigidbodies[i] != mainRigidbody)
-                ragdollRbCount++;
-        }
+            if (allRigidbodies[i] != mainRigidbody) rbCount++;
 
-        ragdollRigidbodies = new Rigidbody[ragdollRbCount];
+        ragdollRigidbodies = new Rigidbody[rbCount];
         int rbIndex = 0;
-
         for (int i = 0; i < allRigidbodies.Length; i++)
-        {
-            Rigidbody rb = allRigidbodies[i];
-            if (rb != null && rb != mainRigidbody)
-                ragdollRigidbodies[rbIndex++] = rb;
-        }
+            if (allRigidbodies[i] != mainRigidbody)
+                ragdollRigidbodies[rbIndex++] = allRigidbodies[i];
 
-        int ragdollColCount = 0;
+        int colCount = 0;
         for (int i = 0; i < allColliders.Length; i++)
-        {
-            if (allColliders[i] != null && allColliders[i] != mainCollider)
-                ragdollColCount++;
-        }
+            if (allColliders[i] != mainCollider) colCount++;
 
-        ragdollColliders = new Collider[ragdollColCount];
+        ragdollColliders = new Collider[colCount];
         int colIndex = 0;
-
         for (int i = 0; i < allColliders.Length; i++)
-        {
-            Collider col = allColliders[i];
-            if (col != null && col != mainCollider)
-                ragdollColliders[colIndex++] = col;
-        }
+            if (allColliders[i] != mainCollider)
+                ragdollColliders[colIndex++] = allColliders[i];
     }
 
     public void EnableRagdoll(Vector3 hitSourcePosition)
     {
-        if (isRagdollActive)
-            return;
+        if (isRagdollActive) return;
 
         isRagdollActive = true;
         respawnScheduled = true;
         respawnTimer = respawnDelay;
 
-        if (cameraController != null)
-            cameraController.ResetFOV();
+        if (m_ImpulseSource != null)
+            m_ImpulseSource.GenerateImpulse(screenShakeForce);
 
-        if (animator != null)
-            animator.enabled = false;
+        cameraController?.ResetFOV();
 
-        if (playerMovementScript != null)
-            playerMovementScript.enabled = false;
-
-        if (mainCollider != null)
-            mainCollider.enabled = false;
+        if (animator != null) animator.enabled = false;
+        if (playerMovementScript != null) playerMovementScript.enabled = false;
+        if (mainCollider != null) mainCollider.enabled = false;
 
         if (mainRigidbody != null)
         {
@@ -148,15 +130,12 @@ public class RagdollController : MonoBehaviour
     {
         Vector3 direction = (transform.position - hitSourcePosition).normalized;
         direction.y = 0f;
-
         Vector3 force = direction * knockbackForce + Vector3.up * knockbackUpwardForce;
 
         for (int i = 0; i < ragdollRigidbodies.Length; i++)
         {
             Rigidbody rb = ragdollRigidbodies[i];
-            if (rb == null)
-                continue;
-
+            if (rb == null) continue;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             rb.AddForce(force, ForceMode.Impulse);
@@ -171,8 +150,7 @@ public class RagdollController : MonoBehaviour
 
         SetRagdollState(false);
 
-        if (mainCollider != null)
-            mainCollider.enabled = true;
+        if (mainCollider != null) mainCollider.enabled = true;
 
         if (mainRigidbody != null)
         {
@@ -182,11 +160,8 @@ public class RagdollController : MonoBehaviour
             mainRigidbody.angularVelocity = Vector3.zero;
         }
 
-        if (animator != null)
-            animator.enabled = true;
-
-        if (playerMovementScript != null)
-            playerMovementScript.enabled = true;
+        if (animator != null) animator.enabled = true;
+        if (playerMovementScript != null) playerMovementScript.enabled = true;
     }
 
     private void SetRagdollState(bool enabled)
@@ -194,38 +169,19 @@ public class RagdollController : MonoBehaviour
         for (int i = 0; i < ragdollRigidbodies.Length; i++)
         {
             Rigidbody rb = ragdollRigidbodies[i];
+            if (rb == null) continue;
 
-            if (rb == null)
-            {
-                Debug.LogError($"RagdollController: ragdollRigidbodies[{i}] is NULL");
-                continue;
-            }
-
-            if (enabled)
-            {
-                rb.isKinematic = false;
-                rb.useGravity = true;
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-            }
-            else
-            {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                rb.useGravity = false;
-                rb.isKinematic = true;
-            }
+            rb.isKinematic = false;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = !enabled;
+            rb.useGravity = enabled;
         }
 
         for (int i = 0; i < ragdollColliders.Length; i++)
         {
-            if (ragdollColliders[i] == null)
-            {
-                Debug.LogError($"RagdollController: ragdollColliders[{i}] is NULL");
-                continue;
-            }
-
-            ragdollColliders[i].enabled = enabled;
+            if (ragdollColliders[i] != null)
+                ragdollColliders[i].enabled = enabled;
         }
     }
 }

@@ -2,13 +2,18 @@ using System.Globalization;
 using TMPro;
 using UnityEngine;
 
-public class DistanceMeter : MonoBehaviour
+public class DistanceMeterUI : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI distanceText;
     [SerializeField] private LevelGenerator levelGenerator;
     [SerializeField] private PlayerRespawnManager playerRespawnManager;
+    [SerializeField] private float speedToDistanceRatio = 4f;
 
+    private long lastMeters = -1;
     private float distanceTravelled;
+
+    private RagdollController cachedRagdoll;
+    private GameObject cachedPlayer;
 
     private void Awake()
     {
@@ -40,62 +45,60 @@ public class DistanceMeter : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (distanceText == null || levelGenerator == null)
-        {
+        if (distanceText == null || levelGenerator == null || playerRespawnManager == null)
             return;
-        }
 
         if (IsPlayerDead())
         {
             return;
         }
 
-        distanceTravelled += levelGenerator.MoveSpeed / 4 * Time.fixedDeltaTime;
+        distanceTravelled += levelGenerator.MoveSpeed / speedToDistanceRatio * Time.fixedDeltaTime;
 
         long meters = Mathf.FloorToInt(distanceTravelled);
-        distanceText.text = FormatDistance(meters);
+        if (meters != lastMeters)
+        {
+            lastMeters = meters;
+            distanceText.text = FormatDistance(meters);
+        }
     }
 
     private bool IsPlayerDead()
     {
-        if (playerRespawnManager == null)
+        GameObject currentPlayer = playerRespawnManager?.CurrentPlayer;
+        if (currentPlayer == null) return true;
+
+        if (currentPlayer != cachedPlayer)
         {
-            return false;
+            cachedPlayer = currentPlayer;
+            cachedRagdoll = currentPlayer.GetComponent<RagdollController>();
         }
 
-        GameObject currentPlayer = playerRespawnManager.CurrentPlayer;
-        if (currentPlayer == null)
-        {
-            return true;
-        }
-
-        RagdollController ragdollController = currentPlayer.GetComponent<RagdollController>();
-        if (ragdollController == null)
-        {
-            return false;
-        }
-
-        return ragdollController.IsRagdollActive;
+        return cachedRagdoll != null && cachedRagdoll.IsRagdollActive;
     }
 
     public void ResetDistance()
     {
         distanceTravelled = 0f;
-
-        if (distanceText != null)
+        cachedPlayer = null;
+        cachedRagdoll = null;
+        if (distanceText != null) 
         {
-            distanceText.text = FormatDistance(0);
+        distanceText.text = FormatDistance(0); 
         }
+        lastMeters = 0;
     }
 
     private string FormatDistance(long meters)
     {
-        if (meters >= 1000000)
+        if (meters >= 1_000_000)
         {
-            float millions = meters / 1000000f;
-            return millions.ToString("F2") + " M";
+            return (meters / 1_000_000f).ToString("F2") + " Mm";
         }
-
+        if (meters >= 1_000)
+        {
+            return (meters / 1_000f).ToString("F2") + " km";
+        }
         return meters.ToString("N0", CultureInfo.InvariantCulture).Replace(",", " ") + " m";
     }
 }

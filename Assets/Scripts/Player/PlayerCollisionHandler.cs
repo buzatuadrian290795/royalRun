@@ -5,7 +5,6 @@ public class PlayerCollisionHandler : MonoBehaviour
     [SerializeField] private PlayerView playerView;
     [SerializeField] private Renderer meshRenderer;
     [SerializeField] private RagdollController ragdollController;
-    //[SerializeField] private float adjustChangeMoveSpeedAmount = 2f;
 
     private int playerLayer;
     private int obstacleLayer;
