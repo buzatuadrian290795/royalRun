@@ -1,5 +1,6 @@
 using UnityEngine;
 
+// Gestioneaza spawn-ul si respawn-ul jucatorului dupa fiecare moarte
 public class PlayerRespawnManager : MonoBehaviour
 {
     [SerializeField] private GameObject playerPrefab;
@@ -17,12 +18,12 @@ public class PlayerRespawnManager : MonoBehaviour
 
     public void SpawnPlayer()
     {
-        levelGenerator?.ResetMoveSpeed();
-        //distanceMeterUI?.ResetDistance();
+        levelGenerator?.ResetMoveSpeed(); // Reseteaza viteza la fiecare respawn
 
         if (CurrentPlayer != null)
             Destroy(CurrentPlayer);
 
+        // Instantiaza jucatorul la punctul de spawn
         CurrentPlayer = Instantiate(playerPrefab, spawnPoint.position, spawnPoint.rotation);
 
         PlayerView playerView = CurrentPlayer.GetComponent<PlayerView>();
@@ -34,8 +35,7 @@ public class PlayerRespawnManager : MonoBehaviour
         else
             Debug.LogError("PlayerRespawnManager: PlayerView or EntryPoint missing.");
 
-        collisionHandler?.StartInvulnerability();
-
-        ragdoll.Init(this);
+        collisionHandler?.StartInvulnerability(); // Invulnerabilitate scurta dupa spawn
+        ragdoll.Init(this); // Injecteaza referinta pentru a putea declansa urmatorul respawn
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Unity.Cinemachine;
 using UnityEngine;
 
+// Gestioneaza tranzitia intre animatie normala si ragdoll la coliziune, apoi declanseaza respawn
 public class RagdollController : MonoBehaviour
 {
     [SerializeField] Animator animator;
@@ -12,12 +13,14 @@ public class RagdollController : MonoBehaviour
     [SerializeField] float respawnDelay = 2f;
     [SerializeField] float knockbackForce = 8f;
     [SerializeField] float knockbackUpwardForce = 2f;
-
     [SerializeField] float screenShakeForce = 2f;
 
     private CinemachineImpulseSource m_ImpulseSource;
+
+    // Componentele oaselor din ragdoll (exclusiv rigidbody/collider-ul principal)
     private Rigidbody[] ragdollRigidbodies;
     private Collider[] ragdollColliders;
+
     private PlayerRespawnManager m_RespawnManager;
 
     private bool isRagdollActive;
@@ -26,6 +29,7 @@ public class RagdollController : MonoBehaviour
 
     public bool IsRagdollActive => isRagdollActive;
 
+    // Injectat de PlayerRespawnManager dupa instantiere
     public void Init(PlayerRespawnManager respawnManager)
     {
         m_RespawnManager = respawnManager;
@@ -33,36 +37,28 @@ public class RagdollController : MonoBehaviour
 
     private void Awake()
     {
-        if (animator == null)
-            animator = GetComponentInChildren<Animator>();
-        if (mainRigidbody == null)
-            mainRigidbody = GetComponent<Rigidbody>();
-        if (mainCollider == null)
-            mainCollider = GetComponent<Collider>();
-        if (playerMovementScript == null)
-            playerMovementScript = GetComponent<PlayerView>();
-        if (collisionHandler == null)
-            collisionHandler = GetComponent<PlayerCollisionHandler>();
-        if (cameraController == null)
-            cameraController = FindFirstObjectByType<CameraController>();
+        if (animator == null) animator = GetComponentInChildren<Animator>();
+        if (mainRigidbody == null) mainRigidbody = GetComponent<Rigidbody>();
+        if (mainCollider == null) mainCollider = GetComponent<Collider>();
+        if (playerMovementScript == null) playerMovementScript = GetComponent<PlayerView>();
+        if (collisionHandler == null) collisionHandler = GetComponent<PlayerCollisionHandler>();
+        if (cameraController == null) cameraController = FindFirstObjectByType<CameraController>();
 
         m_ImpulseSource = GetComponent<CinemachineImpulseSource>();
 
         CacheRagdollParts();
-        DisableRagdollImmediate();
+        DisableRagdollImmediate(); // Porneste cu ragdoll dezactivat
     }
 
     private void FixedUpdate()
     {
-        if (!respawnScheduled)
-            return;
+        if (!respawnScheduled) return;
 
         respawnTimer -= Time.fixedDeltaTime;
-        if (respawnTimer > 0f)
-            return;
+        if (respawnTimer > 0f) return;
 
+        // Timer expirat: declanseaza respawn si distruge jucatorul mort
         respawnScheduled = false;
-
         if (m_RespawnManager != null)
             m_RespawnManager.SpawnPlayer();
         else
@@ -71,32 +67,34 @@ public class RagdollController : MonoBehaviour
         Destroy(gameObject);
     }
 
+    // Colecteaza toate rigidbody/collider-urile copil, excluzand componentele principale
     private void CacheRagdollParts()
     {
-        Rigidbody[] allRigidbodies = GetComponentsInChildren<Rigidbody>(true);
-        Collider[] allColliders = GetComponentsInChildren<Collider>(true);
+        Rigidbody[] allRb = GetComponentsInChildren<Rigidbody>(true);
+        Collider[] allCol = GetComponentsInChildren<Collider>(true);
 
         int rbCount = 0;
-        for (int i = 0; i < allRigidbodies.Length; i++)
-            if (allRigidbodies[i] != mainRigidbody) rbCount++;
+        for (int i = 0; i < allRb.Length; i++)
+            if (allRb[i] != mainRigidbody) rbCount++;
 
         ragdollRigidbodies = new Rigidbody[rbCount];
         int rbIndex = 0;
-        for (int i = 0; i < allRigidbodies.Length; i++)
-            if (allRigidbodies[i] != mainRigidbody)
-                ragdollRigidbodies[rbIndex++] = allRigidbodies[i];
+        for (int i = 0; i < allRb.Length; i++)
+            if (allRb[i] != mainRigidbody)
+                ragdollRigidbodies[rbIndex++] = allRb[i];
 
         int colCount = 0;
-        for (int i = 0; i < allColliders.Length; i++)
-            if (allColliders[i] != mainCollider) colCount++;
+        for (int i = 0; i < allCol.Length; i++)
+            if (allCol[i] != mainCollider) colCount++;
 
         ragdollColliders = new Collider[colCount];
         int colIndex = 0;
-        for (int i = 0; i < allColliders.Length; i++)
-            if (allColliders[i] != mainCollider)
-                ragdollColliders[colIndex++] = allColliders[i];
+        for (int i = 0; i < allCol.Length; i++)
+            if (allCol[i] != mainCollider)
+                ragdollColliders[colIndex++] = allCol[i];
     }
 
+    // Apelat de PlayerCollisionHandler la impact; activeaza ragdoll si programeaza respawn
     public void EnableRagdoll(Vector3 hitSourcePosition)
     {
         if (isRagdollActive) return;
@@ -105,9 +103,7 @@ public class RagdollController : MonoBehaviour
         respawnScheduled = true;
         respawnTimer = respawnDelay;
 
-        if (m_ImpulseSource != null)
-            m_ImpulseSource.GenerateImpulse(screenShakeForce);
-
+        m_ImpulseSource?.GenerateImpulse(screenShakeForce); // Screen shake
         cameraController?.ResetFOV();
 
         if (animator != null) animator.enabled = false;
@@ -126,6 +122,7 @@ public class RagdollController : MonoBehaviour
         ApplyKnockback(hitSourcePosition);
     }
 
+    // Aplica o forta de impingere pe toate oasele, departe de punctul de impact
     private void ApplyKnockback(Vector3 hitSourcePosition)
     {
         Vector3 direction = (transform.position - hitSourcePosition).normalized;
@@ -142,6 +139,7 @@ public class RagdollController : MonoBehaviour
         }
     }
 
+    // Dezactiveaza ragdoll-ul si restaureaza starea normala (apelat la Awake)
     private void DisableRagdollImmediate()
     {
         isRagdollActive = false;
@@ -164,24 +162,22 @@ public class RagdollController : MonoBehaviour
         if (playerMovementScript != null) playerMovementScript.enabled = true;
     }
 
+    // Activeaza/dezactiveaza fizica si coliziunile pentru fiecare os din ragdoll
     private void SetRagdollState(bool enabled)
     {
         for (int i = 0; i < ragdollRigidbodies.Length; i++)
         {
             Rigidbody rb = ragdollRigidbodies[i];
             if (rb == null) continue;
-
             rb.isKinematic = false;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
-            rb.isKinematic = !enabled;
+            rb.isKinematic = !enabled; // Kinematic = oprit, non-kinematic = activ
             rb.useGravity = enabled;
         }
 
         for (int i = 0; i < ragdollColliders.Length; i++)
-        {
             if (ragdollColliders[i] != null)
                 ragdollColliders[i].enabled = enabled;
-        }
     }
 }
