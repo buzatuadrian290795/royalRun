@@ -18,7 +18,7 @@ public class PlayerRespawnManager : MonoBehaviour
     public void SpawnPlayer()
     {
         levelGenerator?.ResetMoveSpeed();
-        distanceMeterUI?.ResetDistance();
+        //distanceMeterUI?.ResetDistance();
 
         if (CurrentPlayer != null)
             Destroy(CurrentPlayer);

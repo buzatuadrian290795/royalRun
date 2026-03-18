@@ -77,17 +77,17 @@ public class DistanceMeterUI : MonoBehaviour
         return cachedRagdoll != null && cachedRagdoll.IsRagdollActive;
     }
 
-    public void ResetDistance()
-    {
-        distanceTravelled = 0f;
-        cachedPlayer = null;
-        cachedRagdoll = null;
-        if (distanceText != null) 
-        {
-        distanceText.text = FormatDistance(0); 
-        }
-        lastMeters = 0;
-    }
+    //public void ResetDistance()
+    //{
+    //    distanceTravelled = 0f;
+    //    cachedPlayer = null;
+    //    cachedRagdoll = null;
+    //    if (distanceText != null) 
+    //    {
+    //    distanceText.text = FormatDistance(0); 
+    //    }
+    //    lastMeters = 0;
+    //}
 
     private string FormatDistance(long meters)
     {

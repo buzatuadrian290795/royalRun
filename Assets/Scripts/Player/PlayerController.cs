@@ -16,6 +16,16 @@ public class PlayerController : IDisposable
         Roll
     }
 
+    // Holds mutable X-interpolation state so it can be passed into async methods
+    // without needing ref/out parameters (which are forbidden in async methods).
+    private sealed class LaneChangeState
+    {
+        public float StartX;
+        public float TargetX;
+        public float Elapsed;
+        public bool Active;
+    }
+
     private readonly PlayerView m_PlayerView;
     private readonly RoadView m_RoadView;
     private readonly LevelGenerator m_LevelGenerator;
@@ -30,7 +40,7 @@ public class PlayerController : IDisposable
     private static readonly int s_RollHash = Animator.StringToHash("Roll");
 
     private float GroundY = 0f;
-    private const float RollY = -0.5f;
+    private const float RollY = -0.75f;
 
     private readonly float m_OriginalCapsuleHeight;
     private readonly Vector3 m_OriginalCapsuleCenter;
@@ -49,6 +59,8 @@ public class PlayerController : IDisposable
 
     private int m_CurrentLane;
     private bool m_IsChangingLane;
+    private bool m_IsJumping;
+    private bool m_IsRolling;
     private bool m_IsSwipeTracking;
     private Vector2 m_SwipeStartPosition;
 
@@ -120,6 +132,9 @@ public class PlayerController : IDisposable
 
     private Movement ReadInput()
     {
+        if (m_IsJumping || m_IsRolling)
+            return Movement.None;
+
         if (m_IsChangingLane)
             return Movement.None;
 
@@ -262,7 +277,7 @@ public class PlayerController : IDisposable
         float startX = m_Rigidbody.position.x;
         float destinationX = m_RoadView.LanePositions[m_CurrentLane];
         float duration = m_RoadView.LaneChangeDuration;
-        float invDuration = 1f / duration; 
+        float invDuration = 1f / duration;
 
         while (time < duration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
         {
@@ -274,32 +289,101 @@ public class PlayerController : IDisposable
         MoveX(destinationX);
     }
 
+    // Checks for a left/right swipe and starts a new lane interpolation if valid.
+    // Uses a class (LaneChangeState) instead of ref params — safe for async methods.
+    private bool TryStartAirLaneChange(Movement input, LaneChangeState state)
+    {
+        if (input != Movement.Left && input != Movement.Right)
+            return false;
+
+        int newLane = input == Movement.Left
+            ? Mathf.Max(0, m_CurrentLane - 1)
+            : Mathf.Min(m_RoadView.LanePositions.Length - 1, m_CurrentLane + 1);
+
+        if (newLane == m_CurrentLane)
+            return false;
+
+        m_CurrentLane = newLane;
+
+        if (input == Movement.Left)
+        {
+            m_Animator.ResetTrigger(s_SwipeRightHash);
+            m_Animator.SetTrigger(s_SwipeLeftHash);
+        }
+        else
+        {
+            m_Animator.ResetTrigger(s_SwipeLeftHash);
+            m_Animator.SetTrigger(s_SwipeRightHash);
+        }
+
+        state.StartX = m_Rigidbody.position.x;
+        state.TargetX = m_RoadView.LanePositions[m_CurrentLane];
+        state.Elapsed = 0f;
+        state.Active = true;
+        return true;
+    }
+
+    // Advances X interpolation by one frame and returns the current X.
+    private float TickLaneX(LaneChangeState state, float laneDuration)
+    {
+        if (!state.Active)
+            return m_Rigidbody.position.x;
+
+        state.Elapsed += Time.deltaTime;
+        float t = Mathf.Clamp01(state.Elapsed / laneDuration);
+        float x = Mathf.Lerp(state.StartX, state.TargetX, t);
+        if (t >= 1f) state.Active = false;
+        return x;
+    }
+
     private async Awaitable JumpAsync()
     {
         await Awaitable.NextFrameAsync();
         await Awaitable.NextFrameAsync();
 
+        m_IsJumping = true;
+
         float time = 0f;
         float invDuration = 1f / JumpDuration;
+        float laneDuration = m_RoadView.LaneChangeDuration;
+
+        var lane = new LaneChangeState
+        {
+            StartX = m_Rigidbody.position.x,
+            TargetX = m_RoadView.LanePositions[m_CurrentLane],
+            Elapsed = 0f,
+            Active = false
+        };
 
         while (time < JumpDuration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
         {
-            MoveY(GroundY + JumpHeight * Mathf.Sin(Mathf.PI * (time * invDuration)));
+            if (!lane.Active)
+                TryStartAirLaneChange(ReadInputDirect(), lane);
+
+            float currentX = TickLaneX(lane, laneDuration);
+            float currentY = GroundY + JumpHeight * Mathf.Sin(Mathf.PI * (time * invDuration));
+            m_Rigidbody.MovePosition(new Vector3(currentX, currentY, m_Rigidbody.position.z));
+
             await Awaitable.NextFrameAsync();
             time += Time.deltaTime;
         }
 
-        MoveY(GroundY);
+        float finalX = m_RoadView.LanePositions[m_CurrentLane];
+        m_Rigidbody.MovePosition(new Vector3(finalX, GroundY, m_Rigidbody.position.z));
+
+        m_IsJumping = false;
     }
 
     private async Awaitable RollAsync()
     {
+        m_IsRolling = true;
+
         m_Rigidbody.useGravity = false;
         m_Rigidbody.linearVelocity = Vector3.zero;
-        m_Rigidbody.isKinematic = false; 
+        m_Rigidbody.isKinematic = false;
 
         int playerLayer = LayerMask.NameToLayer("Player");
-        int groundLayer = LayerMask.NameToLayer("Default"); 
+        int groundLayer = LayerMask.NameToLayer("Default");
 
         Physics.IgnoreLayerCollision(playerLayer, groundLayer, true);
 
@@ -309,24 +393,52 @@ public class PlayerController : IDisposable
             m_Capsule.center = m_RollCapsuleCenter;
         }
 
+        await Awaitable.NextFrameAsync();
+        await Awaitable.NextFrameAsync();
+        await Awaitable.NextFrameAsync();
+
+        float laneDuration = m_RoadView.LaneChangeDuration;
+
+        var lane = new LaneChangeState
+        {
+            StartX = m_Rigidbody.position.x,
+            TargetX = m_RoadView.LanePositions[m_CurrentLane],
+            Elapsed = 0f,
+            Active = false
+        };
+
+        // --- Roll down ---
+        await RollLerpYAsync(GroundY, RollY, RollDownTime, lane, laneDuration);
+
+        // --- Hold ---
         bool jumpQueued = false;
         float elapsed = 0f;
 
-        await LerpYAsync(GroundY, RollY, RollDownTime);
-
         while (elapsed < RollHoldTime && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
         {
-            if (ReadInputDirect() == Movement.Jump)
+            Movement input = ReadInputDirect();
+
+            if (input == Movement.Jump)
             {
                 jumpQueued = true;
                 break;
             }
+
+            if (!lane.Active)
+                TryStartAirLaneChange(input, lane);
+
+            float currentX = TickLaneX(lane, laneDuration);
+            m_Rigidbody.MovePosition(new Vector3(currentX, m_Rigidbody.position.y, m_Rigidbody.position.z));
+
             await Awaitable.NextFrameAsync();
             elapsed += Time.deltaTime;
         }
 
-        await LerpYAsync(RollY, GroundY, RollUpTime);
-        MoveY(GroundY);
+        // --- Roll up ---
+        await RollLerpYAsync(RollY, GroundY, RollUpTime, lane, laneDuration);
+
+        float finalX = m_RoadView.LanePositions[m_CurrentLane];
+        m_Rigidbody.MovePosition(new Vector3(finalX, GroundY, m_Rigidbody.position.z));
 
         if (m_Capsule != null)
         {
@@ -341,15 +453,34 @@ public class PlayerController : IDisposable
         m_Rigidbody.linearVelocity = Vector3.zero;
         m_Rigidbody.angularVelocity = Vector3.zero;
 
+        m_IsRolling = false;
+
         if (jumpQueued)
         {
-            m_Rigidbody.position = new Vector3(
-                m_Rigidbody.position.x,
-                GroundY,
-                m_Rigidbody.position.z
-            );
+            m_Rigidbody.position = new Vector3(finalX, GroundY, m_Rigidbody.position.z);
             m_Animator.SetTrigger(s_JumpHash);
             await JumpAsync();
+        }
+    }
+
+    // Lerps Y over time while also advancing the shared X lane interpolation each frame.
+    private async Awaitable RollLerpYAsync(float fromY, float toY, float duration,
+        LaneChangeState lane, float laneDuration)
+    {
+        float elapsed = 0f;
+        float invDuration = 1f / duration;
+
+        while (elapsed < duration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
+        {
+            if (!lane.Active)
+                TryStartAirLaneChange(ReadInputDirect(), lane);
+
+            float currentX = TickLaneX(lane, laneDuration);
+            float currentY = Mathf.Lerp(fromY, toY, elapsed * invDuration);
+            m_Rigidbody.MovePosition(new Vector3(currentX, currentY, m_Rigidbody.position.z));
+
+            await Awaitable.NextFrameAsync();
+            elapsed += Time.deltaTime;
         }
     }
 
