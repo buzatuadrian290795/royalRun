@@ -16,8 +16,6 @@ public class PlayerController : IDisposable
         Roll
     }
 
-    // Holds mutable X-interpolation state so it can be passed into async methods
-    // without needing ref/out parameters (which are forbidden in async methods).
     private sealed class LaneChangeState
     {
         public float StartX;
@@ -247,6 +245,7 @@ public class PlayerController : IDisposable
                 m_CurrentLane = Mathf.Max(0, m_CurrentLane - 1);
                 m_Animator.ResetTrigger(s_SwipeRightHash);
                 m_Animator.SetTrigger(s_SwipeLeftHash);
+                AudioManager.Instance.PlaySwipe();
                 await MovePlayerAsync();
                 break;
 
@@ -254,16 +253,19 @@ public class PlayerController : IDisposable
                 m_CurrentLane = Mathf.Min(m_RoadView.LanePositions.Length - 1, m_CurrentLane + 1);
                 m_Animator.ResetTrigger(s_SwipeLeftHash);
                 m_Animator.SetTrigger(s_SwipeRightHash);
+                AudioManager.Instance.PlaySwipe();
                 await MovePlayerAsync();
                 break;
 
             case Movement.Jump:
                 m_Animator.SetTrigger(s_JumpHash);
+                AudioManager.Instance.PlayJump();
                 await JumpAsync();
                 break;
 
             case Movement.Roll:
                 m_Animator.SetTrigger(s_RollHash);
+                AudioManager.Instance.PlayRoll();
                 await RollAsync();
                 break;
         }
@@ -289,8 +291,6 @@ public class PlayerController : IDisposable
         MoveX(destinationX);
     }
 
-    // Checks for a left/right swipe and starts a new lane interpolation if valid.
-    // Uses a class (LaneChangeState) instead of ref params — safe for async methods.
     private bool TryStartAirLaneChange(Movement input, LaneChangeState state)
     {
         if (input != Movement.Left && input != Movement.Right)
@@ -323,7 +323,6 @@ public class PlayerController : IDisposable
         return true;
     }
 
-    // Advances X interpolation by one frame and returns the current X.
     private float TickLaneX(LaneChangeState state, float laneDuration)
     {
         if (!state.Active)
@@ -357,8 +356,10 @@ public class PlayerController : IDisposable
 
         while (time < JumpDuration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
         {
-            if (!lane.Active)
-                TryStartAirLaneChange(ReadInputDirect(), lane);
+            Movement airInput = ReadInputDirect();
+
+            if (TryStartAirLaneChange(airInput, lane))
+                AudioManager.Instance.PlaySwipe(); ;
 
             float currentX = TickLaneX(lane, laneDuration);
             float currentY = GroundY + JumpHeight * Mathf.Sin(Mathf.PI * (time * invDuration));
@@ -407,10 +408,8 @@ public class PlayerController : IDisposable
             Active = false
         };
 
-        // --- Roll down ---
         await RollLerpYAsync(GroundY, RollY, RollDownTime, lane, laneDuration);
 
-        // --- Hold ---
         bool jumpQueued = false;
         float elapsed = 0f;
 
@@ -425,7 +424,10 @@ public class PlayerController : IDisposable
             }
 
             if (!lane.Active)
-                TryStartAirLaneChange(input, lane);
+            {
+                if (TryStartAirLaneChange(input, lane))
+                    AudioManager.Instance.PlaySwipe();
+            }
 
             float currentX = TickLaneX(lane, laneDuration);
             m_Rigidbody.MovePosition(new Vector3(currentX, m_Rigidbody.position.y, m_Rigidbody.position.z));
@@ -434,7 +436,6 @@ public class PlayerController : IDisposable
             elapsed += Time.deltaTime;
         }
 
-        // --- Roll up ---
         await RollLerpYAsync(RollY, GroundY, RollUpTime, lane, laneDuration);
 
         float finalX = m_RoadView.LanePositions[m_CurrentLane];
@@ -463,7 +464,6 @@ public class PlayerController : IDisposable
         }
     }
 
-    // Lerps Y over time while also advancing the shared X lane interpolation each frame.
     private async Awaitable RollLerpYAsync(float fromY, float toY, float duration,
         LaneChangeState lane, float laneDuration)
     {
@@ -473,7 +473,10 @@ public class PlayerController : IDisposable
         while (elapsed < duration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
         {
             if (!lane.Active)
-                TryStartAirLaneChange(ReadInputDirect(), lane);
+            {
+                if (TryStartAirLaneChange(ReadInputDirect(), lane))
+                    AudioManager.Instance.PlaySwipe();
+            }
 
             float currentX = TickLaneX(lane, laneDuration);
             float currentY = Mathf.Lerp(fromY, toY, elapsed * invDuration);

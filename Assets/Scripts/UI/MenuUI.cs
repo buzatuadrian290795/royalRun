@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -9,13 +8,13 @@ public class MenuUI : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] GameObject pauseMenu;
+    [SerializeField] SettingsUI settingsUI;
 
     [Header("Buttons")]
     [SerializeField] Button xButton;
     [SerializeField] Button resumeButton;
     [SerializeField] Button exitButton;
-
-    //bool isMenuOpen;
+    [SerializeField] Button settingsButton;
 
     private void Awake()
     {
@@ -27,6 +26,7 @@ public class MenuUI : MonoBehaviour
         if (xButton != null) xButton.onClick.AddListener(ToggleMenu);
         if (resumeButton != null) resumeButton.onClick.AddListener(ResumeGame);
         if (exitButton != null) exitButton.onClick.AddListener(QuitGame);
+        if (settingsButton != null) settingsButton.onClick.AddListener(OpenSettings);
     }
 
     private void Start()
@@ -34,12 +34,16 @@ public class MenuUI : MonoBehaviour
         ResumeGame();
     }
 
+    public void OpenSettings()
+    {
+        if (settingsUI != null)
+            settingsUI.Open();
+    }
+
     public void PauseGame()
     {
         if (pauseMenu != null)
             pauseMenu.SetActive(true);
-
-        //isMenuOpen = true;
         Time.timeScale = 0f;
     }
 
@@ -47,8 +51,6 @@ public class MenuUI : MonoBehaviour
     {
         if (pauseMenu != null)
             pauseMenu.SetActive(false);
-
-        //isMenuOpen = false;
         Time.timeScale = 1f;
     }
 
@@ -64,11 +66,11 @@ public class MenuUI : MonoBehaviour
     {
         Time.timeScale = 1f;
         Application.Quit();
-
-    #if UNITY_EDITOR
-            EditorApplication.isPlaying = false;
-    #endif
+#if UNITY_EDITOR
+        EditorApplication.isPlaying = false;
+#endif
     }
+
     private void OnDestroy()
     {
         Time.timeScale = 1f;

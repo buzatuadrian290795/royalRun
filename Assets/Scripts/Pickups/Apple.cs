@@ -6,6 +6,7 @@ public class Apple : Pickup
 
     protected override void OnPickup()
     {
+        AudioManager.Instance.PlayApple();
         m_LevelGenerator?.ChangeChunkMoveSpeed(adjustChangeMoveSpeedAmount);
     }
 }

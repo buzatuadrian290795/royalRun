@@ -81,6 +81,7 @@ public class PlayerCollisionHandler : MonoBehaviour
 
         if (collision.gameObject.CompareTag("Obstacle"))
         {
+            AudioManager.Instance.PlayAuch();
             Vector3 hitPoint = collision.transform.position;
             ragdollController.EnableRagdoll(hitPoint);
         }
