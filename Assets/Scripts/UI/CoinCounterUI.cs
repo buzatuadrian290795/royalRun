@@ -8,6 +8,8 @@ public class CoinCounterUI : MonoBehaviour
 
     [SerializeField] private TextMeshProUGUI coinsText;
 
+    private const string CoinsKey = "TotalCoins";
+
     private int coins;
 
     private void Awake()
@@ -17,12 +19,14 @@ public class CoinCounterUI : MonoBehaviour
 
     private void Start()
     {
+        coins = PlayerPrefs.GetInt(CoinsKey, 0);
         UpdateCoinsText();
     }
 
     public void AddCoin(int amount)
     {
         coins += amount;
+        PlayerPrefs.SetInt(CoinsKey, coins);
         UpdateCoinsText();
     }
 

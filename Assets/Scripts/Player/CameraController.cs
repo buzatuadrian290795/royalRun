@@ -2,26 +2,33 @@ using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
 
+// Gestioneaza FOV-ul camerei si efectul de particule la accelerare
 public class CameraController : MonoBehaviour
 {
     [SerializeField] private ParticleSystem speedupParticleSystem;
     [SerializeField] private float minFOV = 60f;
     [SerializeField] private float maxFOV = 100f;
     [SerializeField] private float zoomDuration = 1f;
-    [SerializeField] private float zoomSpeedModifier = 1f;
+    [SerializeField] private float zoomSpeedModifier = 1f; // Cat de mult afecteaza viteza FOV-ul
     [SerializeField] private float resetFOVDuration = 1f;
+
+    [Header("Shake")]
+    [SerializeField] private CinemachineImpulseSource impulseSource;
+    [SerializeField] private float shakeIntensity = 0.3f;
 
     private CinemachineCamera cinemachineCamera;
     private Coroutine fovCoroutine;
+    private PlayerRespawnManager m_RespawnManager;
 
     private void Awake()
     {
         cinemachineCamera = GetComponent<CinemachineCamera>();
+        speedupParticleSystem?.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+    }
 
-        if (speedupParticleSystem != null)
-        {
-            speedupParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-        }
+    private void Start()
+    {
+        m_RespawnManager = FindFirstObjectByType<PlayerRespawnManager>();
     }
 
     private void LateUpdate()
@@ -29,69 +36,45 @@ public class CameraController : MonoBehaviour
         EnsureTargetIsCurrentPlayer();
     }
 
+    // Actualizeaza tinta camerei dupa fiecare respawn (daca jucatorul s-a schimbat)
     private void EnsureTargetIsCurrentPlayer()
     {
-        PlayerRespawnManager respawnManager = FindFirstObjectByType<PlayerRespawnManager>();
-        if (respawnManager == null || respawnManager.CurrentPlayer == null || cinemachineCamera == null)
-        {
+        if (m_RespawnManager == null || m_RespawnManager.CurrentPlayer == null || cinemachineCamera == null)
             return;
-        }
 
-        Transform currentPlayerTransform = respawnManager.CurrentPlayer.transform;
-
+        Transform currentPlayerTransform = m_RespawnManager.CurrentPlayer.transform;
         if (cinemachineCamera.Target.TrackingTarget != currentPlayerTransform)
-        {
             cinemachineCamera.Target.TrackingTarget = currentPlayerTransform;
-        }
     }
 
+    // Mareste/micsoreaza FOV proportional cu speedAmount si porneste particulele
     public void ChangeCameraFOV(float speedAmount)
     {
-        if (cinemachineCamera == null)
-            return;
-
-        if (fovCoroutine != null)
-        {
-            StopCoroutine(fovCoroutine);
-        }
-
+        if (cinemachineCamera == null) return;
+        if (fovCoroutine != null) StopCoroutine(fovCoroutine);
         fovCoroutine = StartCoroutine(ChangeFOVRoutine(speedAmount));
-
-        if (speedAmount > 0)
-        {
-            speedupParticleSystem.Play();
-        }
+        if (speedAmount > 0) speedupParticleSystem.Play();
     }
 
+    // Revine la FOV minim si opreste particulele
     public void ResetFOV()
     {
-        if (cinemachineCamera == null)
-            return;
-
-        if (fovCoroutine != null)
-        {
-            StopCoroutine(fovCoroutine);
-        }
-
-        if (speedupParticleSystem != null)
-        {
-            speedupParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-        }
-
+        if (cinemachineCamera == null) return;
+        if (fovCoroutine != null) StopCoroutine(fovCoroutine);
+        speedupParticleSystem?.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         fovCoroutine = StartCoroutine(ResetFOVRoutine());
     }
 
+    // Shake la lovirea unui obstacol in Rush
+    public void Shake() => impulseSource?.GenerateImpulse(shakeIntensity);
+
+    // Porneste sau opreste efectul de particule (apelat din exterior)
     public void SetSpeedupEffectActive(bool isActive)
     {
-        if (speedupParticleSystem == null)
-            return;
-
+        if (speedupParticleSystem == null) return;
         if (isActive)
         {
-            if (!speedupParticleSystem.isPlaying)
-            {
-                speedupParticleSystem.Play();
-            }
+            if (!speedupParticleSystem.isPlaying) speedupParticleSystem.Play();
         }
         else
         {
@@ -99,19 +82,17 @@ public class CameraController : MonoBehaviour
         }
     }
 
+    // Interpoleaza FOV de la valoarea curenta la cea tinta (clamped intre min si max)
     private IEnumerator ChangeFOVRoutine(float speedAmount)
     {
         float startFOV = cinemachineCamera.Lens.FieldOfView;
         float targetFOV = Mathf.Clamp(startFOV + speedAmount * zoomSpeedModifier, minFOV, maxFOV);
+        float elapsed = 0f;
 
-        float elapsedTime = 0f;
-
-        while (elapsedTime < zoomDuration)
+        while (elapsed < zoomDuration)
         {
-            float t = elapsedTime / zoomDuration;
-            cinemachineCamera.Lens.FieldOfView = Mathf.Lerp(startFOV, targetFOV, t);
-
-            elapsedTime += Time.deltaTime;
+            cinemachineCamera.Lens.FieldOfView = Mathf.Lerp(startFOV, targetFOV, elapsed / zoomDuration);
+            elapsed += Time.deltaTime;
             yield return null;
         }
 
@@ -119,17 +100,16 @@ public class CameraController : MonoBehaviour
         fovCoroutine = null;
     }
 
+    // Interpoleaza FOV inapoi la minFOV
     private IEnumerator ResetFOVRoutine()
     {
         float startFOV = cinemachineCamera.Lens.FieldOfView;
-        float elapsedTime = 0f;
+        float elapsed = 0f;
 
-        while (elapsedTime < resetFOVDuration)
+        while (elapsed < resetFOVDuration)
         {
-            float t = elapsedTime / resetFOVDuration;
-            cinemachineCamera.Lens.FieldOfView = Mathf.Lerp(startFOV, minFOV, t);
-
-            elapsedTime += Time.deltaTime;
+            cinemachineCamera.Lens.FieldOfView = Mathf.Lerp(startFOV, minFOV, elapsed / resetFOVDuration);
+            elapsed += Time.deltaTime;
             yield return null;
         }
 

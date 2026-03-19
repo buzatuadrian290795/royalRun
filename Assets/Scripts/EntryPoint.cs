@@ -1,5 +1,6 @@
 using UnityEngine;
 
+// Punctul de intrare al jocului: initializeaza ecranul si gestioneaza PlayerController
 public class EntryPoint : MonoBehaviour
 {
     [SerializeField] private RoadView roadView;
@@ -9,34 +10,51 @@ public class EntryPoint : MonoBehaviour
 
     private void Awake()
     {
-        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+        Screen.sleepTimeout = SleepTimeout.NeverSleep; // Ecranul nu se stinge in timpul jocului
         QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = 60;
+
+        if (!PlayerPrefs.HasKey("GraphicsInitialized"))
+        {
+            SetDefaultGraphics();
+            PlayerPrefs.SetInt("GraphicsInitialized", 1);
+            PlayerPrefs.Save();
+        }
     }
 
-    public void InitializePlayer(PlayerView playerView)
+    private void SetDefaultGraphics()
     {
-        if (m_PlayerController != null)
+        // Quality High
+        string[] names = QualitySettings.names;
+        for (int i = 0; i < names.Length; i++)
         {
-            m_PlayerController.Dispose();
+            if (names[i].ToLower().Contains("high"))
+            {
+                QualitySettings.SetQualityLevel(i, true);
+                break;
+            }
         }
 
-        m_PlayerController = new PlayerController(playerView, roadView, m_LevelGenerator);
+        Application.targetFrameRate = 120;
+        PlayerPrefs.SetInt("TargetFPS", 120);
+        QualitySettings.vSyncCount = 0;
+        QualitySettings.shadows = ShadowQuality.All;
+    }
+
+    // Apelat de PlayerRespawnManager la fiecare (re)spawn; inlocuieste controllerul vechi
+    public void InitializePlayer(PlayerView playerView)
+    {
+        m_PlayerController?.Dispose();
+        RoadView rv = roadView != null ? roadView : m_LevelGenerator?.RoadView;
+        m_PlayerController = new PlayerController(playerView, rv, m_LevelGenerator);
     }
 
     private void Update()
     {
-        if (m_PlayerController != null)
-        {
-            m_PlayerController.Tick();
-        }
+        m_PlayerController?.Tick();
     }
 
     private void OnDestroy()
     {
-        if (m_PlayerController != null)
-        {
-            m_PlayerController.Dispose();
-        }
+        m_PlayerController?.Dispose();
     }
 }
