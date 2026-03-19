@@ -34,7 +34,9 @@ public class MenuUI : MonoBehaviour
 
     private void Start()
     {
+        gameObject.SetActive(true);
         ResumeGame(); // Asigura ca jocul porneste fara meniu deschis
+        if (xButton != null) xButton.gameObject.SetActive(true);
     }
 
     // Deschide meniul de setari

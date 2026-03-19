@@ -12,14 +12,40 @@ public class EntryPoint : MonoBehaviour
     {
         Screen.sleepTimeout = SleepTimeout.NeverSleep; // Ecranul nu se stinge in timpul jocului
         QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = 60;
+
+        if (!PlayerPrefs.HasKey("GraphicsInitialized"))
+        {
+            SetDefaultGraphics();
+            PlayerPrefs.SetInt("GraphicsInitialized", 1);
+            PlayerPrefs.Save();
+        }
+    }
+
+    private void SetDefaultGraphics()
+    {
+        // Quality High
+        string[] names = QualitySettings.names;
+        for (int i = 0; i < names.Length; i++)
+        {
+            if (names[i].ToLower().Contains("high"))
+            {
+                QualitySettings.SetQualityLevel(i, true);
+                break;
+            }
+        }
+
+        Application.targetFrameRate = 120;
+        PlayerPrefs.SetInt("TargetFPS", 120);
+        QualitySettings.vSyncCount = 0;
+        QualitySettings.shadows = ShadowQuality.All;
     }
 
     // Apelat de PlayerRespawnManager la fiecare (re)spawn; inlocuieste controllerul vechi
     public void InitializePlayer(PlayerView playerView)
     {
         m_PlayerController?.Dispose();
-        m_PlayerController = new PlayerController(playerView, roadView, m_LevelGenerator);
+        RoadView rv = roadView != null ? roadView : m_LevelGenerator?.RoadView;
+        m_PlayerController = new PlayerController(playerView, rv, m_LevelGenerator);
     }
 
     private void Update()

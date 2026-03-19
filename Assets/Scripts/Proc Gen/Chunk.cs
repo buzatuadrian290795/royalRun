@@ -4,28 +4,15 @@ using UnityEngine;
 // Reprezinta un segment de drum; la spawn genereaza obstacole, mere si monede
 public class Chunk : MonoBehaviour
 {
-    [Header("Prefabs")]
-    [SerializeField] GameObject[] obstaclePrefabs;
-    [SerializeField] GameObject applePrefab;
-    [SerializeField] GameObject coinPrefab;
+    [SerializeField] ChunkConfig config;
 
-    [Header("Obstacle Spawn")]
+    [Header("Variants")]
+    [SerializeField] GameObject[] variants;
+
+    [Header("Obstacle Spawn Override")]
     [SerializeField, Range(0f, 1f)] private float obstacleDensity = 0.5f; // 0=minim, 1=maxim
     [SerializeField] private int minObstaclesToSpawn = 0;
     [SerializeField] private int maxObstaclesToSpawn = 2;
-
-    [Header("Spawn Chances")]
-    [SerializeField, Range(0f, 1f)] float appleSpawnChance = 0.3f;
-    [SerializeField, Range(0f, 1f)] float coinSpawnChance = 0.5f;
-
-    [Header("Coins")]
-    [SerializeField] float coinSeparationLength = 2f; // Distanta intre monede consecutive
-    [SerializeField] int minCoinsToSpawn = 1;
-    [SerializeField] int maxCoinsToSpawn = 6;
-
-    [Header("Lanes")]
-    [SerializeField] float[] obstacleLanes = { -3f, 0f, 3f };
-    [SerializeField] float[] pickupLanes = { -3f, 0f, 3f };
 
     const int LaneCount = 3;
 
@@ -40,6 +27,7 @@ public class Chunk : MonoBehaviour
 
     // Lista obiectelor spawned dinamic; folosita de Cleanup pentru a le distruge la reciclare
     private readonly List<GameObject> m_SpawnedObjects = new List<GameObject>();
+
 
     // Apelat din LevelGenerator pentru a ajusta dificultatea dinamic
     public void SetObstacleSpawnRange(int minObstacles, int maxObstacles)
@@ -63,11 +51,14 @@ public class Chunk : MonoBehaviour
     // Apelat de LevelGenerator dupa ce chunk-ul a fost pozitionat (inclusiv la refolosire din pool)
     public void Initialize()
     {
+        ActivateRandomVariant();
         CacheChunkPosition();
         ResetAvailableLanes();
 
         SpawnObstacles();
         SpawnApple();
+        SpawnMagnet();
+        SpawnRush();
         SpawnCoins();
     }
 
@@ -75,7 +66,8 @@ public class Chunk : MonoBehaviour
     public void Cleanup()
     {
         foreach (var obj in m_SpawnedObjects)
-            if (obj != null) Destroy(obj);
+            if (obj != null && obj.transform.parent == transform)
+                Destroy(obj);
         m_SpawnedObjects.Clear();
     }
 
@@ -90,7 +82,14 @@ public class Chunk : MonoBehaviour
 
         Pickup pickup = obj.GetComponent<Pickup>();
         if (pickup != null)
-            pickup.Init(m_LevelGenerator);
+            pickup.Init(m_LevelGenerator, config);
+    }
+
+    private void ActivateRandomVariant()
+    {
+        if (variants == null || variants.Length == 0) return;
+        foreach (var v in variants) v.SetActive(false);
+        variants[Random.Range(0, variants.Length)].SetActive(true);
     }
 
     private void CacheChunkPosition()
@@ -112,10 +111,10 @@ public class Chunk : MonoBehaviour
 
     private void SpawnObstacles()
     {
-        if (obstaclePrefabs == null || obstaclePrefabs.Length == 0) return;
+        if (config == null || config.obstaclePrefabs == null || config.obstaclePrefabs.Length == 0) return;
 
         // Calculeaza numarul de obstacole prin lerp intre min si max dupa densitate
-        int maxSpawnAllowed = Mathf.Min(maxObstaclesToSpawn, obstacleLanes.Length, availableLaneCount);
+        int maxSpawnAllowed = Mathf.Min(maxObstaclesToSpawn, m_LevelGenerator.LanePositions.Length, availableLaneCount);
         int minSpawnAllowed = Mathf.Clamp(minObstaclesToSpawn, 0, maxSpawnAllowed);
         int obstaclesToSpawn = Mathf.RoundToInt(
             Mathf.Lerp(minSpawnAllowed, maxSpawnAllowed, obstacleDensity)
@@ -137,38 +136,57 @@ public class Chunk : MonoBehaviour
             GameObject obstaclePrefab = GetRandomObstaclePrefab();
             if (obstaclePrefab == null) continue;
 
-            SpawnObject(obstaclePrefab, obstacleLanes[lane], chunkY, chunkZ);
+            SpawnObject(obstaclePrefab, m_LevelGenerator.LanePositions[lane], chunkY, chunkZ);
         }
     }
 
     private GameObject GetRandomObstaclePrefab()
     {
-        if (obstaclePrefabs == null || obstaclePrefabs.Length == 0) return null;
-        return obstaclePrefabs[Random.Range(0, obstaclePrefabs.Length)];
+        if (config == null || config.obstaclePrefabs == null || config.obstaclePrefabs.Length == 0) return null;
+        return config.obstaclePrefabs[Random.Range(0, config.obstaclePrefabs.Length)];
     }
 
     private void SpawnApple()
     {
-        if (applePrefab == null || availableLaneCount == 0) return;
-        if (Random.value > appleSpawnChance) return;
+        if (config == null || config.applePrefab == null || availableLaneCount == 0) return;
+        if (Random.value > config.appleSpawnChance) return;
 
         int lane = SelectRandomAvailableLane();
-        SpawnObject(applePrefab, pickupLanes[lane], chunkY, chunkZ);
+        SpawnObject(config.applePrefab, m_LevelGenerator.LanePositions[lane], chunkY, chunkZ);
+    }
+
+    private void SpawnMagnet()
+    {
+        if (config == null || config.magnetPrefab == null || availableLaneCount == 0) return;
+        if (Random.value > config.magnetSpawnChance) return;
+
+        int lane = SelectRandomAvailableLane();
+        SpawnObject(config.magnetPrefab, m_LevelGenerator.LanePositions[lane], chunkY, chunkZ);
+    }
+
+    private void SpawnRush()
+    {
+        if (config == null || config.rushPrefab == null || availableLaneCount == 0) return;
+        if (RushEffect.Instance != null && RushEffect.Instance.IsActive) return;
+        if (Random.value > config.rushSpawnChance) return;
+
+        int lane = SelectRandomAvailableLane();
+        SpawnObject(config.rushPrefab, m_LevelGenerator.LanePositions[lane], chunkY, chunkZ);
     }
 
     private void SpawnCoins()
     {
-        if (availableLaneCount == 0 || Random.value > coinSpawnChance) return;
+        if (config == null || availableLaneCount == 0 || Random.value > config.coinSpawnChance) return;
 
         int lane = SelectRandomAvailableLane();
-        int coinsToSpawn = Random.Range(minCoinsToSpawn, maxCoinsToSpawn + 1);
+        int coinsToSpawn = Random.Range(config.minCoinsToSpawn, config.maxCoinsToSpawn + 1);
 
         // Monedele pornesc din fata chunk-ului si merg spre spate cu coinSeparationLength intre ele
-        float startZ = chunkZ + (coinSeparationLength * 2f);
-        float laneX = pickupLanes[lane];
+        float startZ = chunkZ + (config.coinSeparationLength * 2f);
+        float laneX = m_LevelGenerator.LanePositions[lane];
 
         for (int i = 0; i < coinsToSpawn; i++)
-            SpawnObject(coinPrefab, laneX, chunkY, startZ - (i * coinSeparationLength));
+            SpawnObject(config.coinPrefab, laneX, chunkY, startZ - (i * config.coinSeparationLength));
     }
 
     // Alege o banda aleatorie din cele disponibile si o scoate din pool (Fisher-Yates partial)

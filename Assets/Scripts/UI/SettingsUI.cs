@@ -8,6 +8,7 @@ public class SettingsUI : MonoBehaviour
     [Header("Panels")]
     [SerializeField] private GameObject m_Overlay;        // Fundalul inchis al meniului
     [SerializeField] private GameObject m_MainPanel;      // Panoul principal (meniu categorii)
+    [SerializeField] private GameObject m_PauseMenu;      // Meniul de pauza (ascuns cand Settings e deschis)
     [SerializeField] private GameObject m_AudioPanel;
     [SerializeField] private GameObject m_GraphicsPanel;
     [SerializeField] private GameObject m_GameplayPanel;
@@ -69,6 +70,7 @@ public class SettingsUI : MonoBehaviour
     public void Open()
     {
         AudioManager.Instance?.PlayUI();
+        if (m_PauseMenu != null) m_PauseMenu.SetActive(false);
         m_Overlay.SetActive(true);
         ShowPanel(m_MainPanel);
         LoadValuesIntoUI();
@@ -79,6 +81,7 @@ public class SettingsUI : MonoBehaviour
     {
         AudioManager.Instance?.PlayUI();
         m_Overlay.SetActive(false);
+        if (m_PauseMenu != null) m_PauseMenu.SetActive(true);
         PlayerPrefs.Save();
     }
 
@@ -142,8 +145,8 @@ public class SettingsUI : MonoBehaviour
     {
         if (m_IsLoading) return;
         AudioManager.Instance?.PlayUI();
-        // Dropdown-ul are 3 optiuni fixe: index 0=30fps, 1=60fps, 2=120fps
-        int[] options = { 30, 60, 120 };
+        // Dropdown-ul are 4 optiuni fixe: index 0=30fps, 1=60fps, 2=120fps, 3=MAX(-1)
+        int[] options = { 30, 60, 120, -1 };
         SettingsManager.Instance?.SetTargetFPS(options[v]);
     }
 
@@ -224,7 +227,7 @@ public class SettingsUI : MonoBehaviour
         if (m_FpsDropdown != null)
         {
             // Gaseste indexul din dropdown care corespunde FPS-ului salvat (default: index 1 = 60fps)
-            int[] fpsOptions = { 30, 60, 120 };
+            int[] fpsOptions = { 30, 60, 120, -1 };
             int fpsIndex = System.Array.IndexOf(fpsOptions, s.TargetFPS);
             m_FpsDropdown.SetValueWithoutNotify(fpsIndex >= 0 ? fpsIndex : 1);
         }

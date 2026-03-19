@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 // Singleton care stocheaza, aplica si salveaza toate setarile jocului
 public class SettingsManager : MonoBehaviour
@@ -64,7 +65,8 @@ public class SettingsManager : MonoBehaviour
     public void SetQualityLevel(int value)
     {
         m_QualityLevel = value;
-        QualitySettings.SetQualityLevel(value); // Aplica preset Unity
+        QualitySettings.SetQualityLevel(value);
+        ApplyURPQuality(value);
         PlayerPrefs.SetInt("QualityLevel", value);
     }
 
@@ -104,13 +106,8 @@ public class SettingsManager : MonoBehaviour
     public void DoResetProgress()
     {
         PlayerPrefs.DeleteAll(); // Sterge toate datele salvate
-
-        // Reseteaza distanta parcursa daca componenta exista in scena
-        var distanceMeter = FindFirstObjectByType<DistanceMeterUI>();
-        if (distanceMeter != null)
-            distanceMeter.ResetDistance();
-
-        Load(); // Reincarca valorile default
+        PlayerPrefs.Save();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     // ---------- SAVE / LOAD ----------
@@ -121,8 +118,8 @@ public class SettingsManager : MonoBehaviour
         m_MusicVolume = PlayerPrefs.GetFloat("MusicVolume", 0.5f);
         m_SfxVolume = PlayerPrefs.GetFloat("SfxVolume", 0.5f);
         m_IsMuted = PlayerPrefs.GetInt("Muted", 0) == 1;
-        m_QualityLevel = PlayerPrefs.GetInt("QualityLevel", 2);
-        m_TargetFPS = PlayerPrefs.GetInt("TargetFPS", 60);
+        m_QualityLevel = PlayerPrefs.GetInt("QualityLevel", 0);
+        m_TargetFPS = PlayerPrefs.GetInt("TargetFPS", 120);
         m_ShadowsEnabled = PlayerPrefs.GetInt("Shadows", 1) == 1;
         m_SwipeSensitivity = PlayerPrefs.GetFloat("SwipeSensitivity", 35f);
         m_VibrationEnabled = PlayerPrefs.GetInt("Vibration", 1) == 1;
@@ -134,9 +131,37 @@ public class SettingsManager : MonoBehaviour
     {
         Application.targetFrameRate = m_TargetFPS;
         QualitySettings.SetQualityLevel(m_QualityLevel);
+        ApplyURPQuality(m_QualityLevel);
 
         var urpAsset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
         if (urpAsset != null)
             urpAsset.shadowDistance = m_ShadowsEnabled ? 50f : 0f;
+    }
+
+    // Aplica manual parametrii URP diferiti pentru fiecare nivel de calitate
+    // Index: 0 = High, 1 = Medium, 2 = Low (ordinea din QualitySettings.asset)
+    private void ApplyURPQuality(int level)
+    {
+        var urpAsset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+        if (urpAsset == null) return;
+
+        switch (level)
+        {
+            case 0: // High
+                urpAsset.renderScale = 1.0f;
+                urpAsset.shadowDistance = m_ShadowsEnabled ? 50f : 0f;
+                urpAsset.msaaSampleCount = 4;
+                break;
+            case 1: // Medium
+                urpAsset.renderScale = 0.75f;
+                urpAsset.shadowDistance = m_ShadowsEnabled ? 30f : 0f;
+                urpAsset.msaaSampleCount = 2;
+                break;
+            case 2: // Low
+                urpAsset.renderScale = 0.5f;
+                urpAsset.shadowDistance = 0f; // Fara umbre la Low
+                urpAsset.msaaSampleCount = 1;
+                break;
+        }
     }
 }

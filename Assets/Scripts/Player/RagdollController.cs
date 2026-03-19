@@ -9,7 +9,7 @@ public class RagdollController : MonoBehaviour
     [SerializeField] Collider mainCollider;
     [SerializeField] PlayerView playerMovementScript;
     [SerializeField] PlayerCollisionHandler collisionHandler;
-    [SerializeField] CameraController cameraController;
+    private CameraController cameraController;
     [SerializeField] float respawnDelay = 2f;
     [SerializeField] float knockbackForce = 8f;
     [SerializeField] float knockbackUpwardForce = 2f;

@@ -6,6 +6,9 @@ public class PlayerCollisionHandler : MonoBehaviour
     [SerializeField] private PlayerView playerView;
     [SerializeField] private Renderer meshRenderer;
     [SerializeField] private RagdollController ragdollController;
+    [SerializeField] private float rushHitForce = 15f;
+    private MagnetEffect magnetEffect;
+    private CameraController cameraController;
 
     private int playerLayer;
     private int obstacleLayer;
@@ -18,6 +21,8 @@ public class PlayerCollisionHandler : MonoBehaviour
     private void Awake()
     {
         if (playerView == null) playerView = GetComponent<PlayerView>();
+        magnetEffect = GetComponent<MagnetEffect>();
+        cameraController = FindFirstObjectByType<CameraController>();
 
         if (playerView == null) Debug.LogError("PlayerCollisionHandler: PlayerView not found.");
         if (meshRenderer == null) Debug.LogError("PlayerCollisionHandler: Mesh Renderer not set.");
@@ -55,9 +60,31 @@ public class PlayerCollisionHandler : MonoBehaviour
 
         if (collision.gameObject.CompareTag("Obstacle"))
         {
+            if (RushEffect.Instance != null && RushEffect.Instance.IsActive)
+            {
+                GameObject obstacle = collision.gameObject;
+                obstacle.transform.SetParent(null);
+
+                Rigidbody rb = obstacle.GetComponent<Rigidbody>();
+                if (rb == null) rb = obstacle.AddComponent<Rigidbody>();
+                rb.isKinematic = false;
+
+                Vector3 dir = (obstacle.transform.position - transform.position).normalized;
+                dir.y = Mathf.Abs(dir.y) + 0.3f;
+                rb.AddForce(dir * rushHitForce, ForceMode.Impulse);
+                rb.AddTorque(Random.insideUnitSphere * rushHitForce, ForceMode.Impulse);
+
+                DetachedObstacle detached = obstacle.AddComponent<DetachedObstacle>();
+                detached.Init(rb);
+                RushEffect.AddObstacleHit();
+                cameraController?.Shake();
+                return;
+            }
+
             VibrationManager.Instance.Vibrate(100);
             AudioManager.Instance.PlayAuch();
             ragdollController.EnableRagdoll(collision.transform.position);
+            if (magnetEffect != null) magnetEffect.Deactivate();
         }
     }
 

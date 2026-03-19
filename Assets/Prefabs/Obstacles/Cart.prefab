@@ -8,6 +8,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -6224537623997966161, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
+      propertyPath: fragmentCount
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: -6224537623997966161, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
+      propertyPath: fragmentLifetime
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2767179029008764620, guid: f23b1c1de095cde41b9e31b5fdc24d7a, type: 3}
       propertyPath: m_Layer
       value: 9

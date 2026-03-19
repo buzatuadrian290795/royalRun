@@ -57,6 +57,7 @@ public class PlayerController : IDisposable
     private const float JumpDuration = 0.6f;
 
     // Constante pentru rostogolire (impartita in 3 faze: coborare, mentinere, ridicare)
+    private const float RollAnimDelay = 0.08f; // Delay inainte sa inceapa coborarea fizica
     private const float RollDuration = 0.8f;
     private const float RollDownTime = 0.15f;
     private const float RollUpTime = 0.2f;
@@ -71,6 +72,8 @@ public class PlayerController : IDisposable
     private bool m_IsChangingLane;
     private bool m_IsJumping;
     private bool m_IsRolling;
+
+    public static bool IsRolling { get; private set; }
     private bool m_IsSwipeTracking;
     private Vector2 m_SwipeStartPosition;
 
@@ -103,6 +106,11 @@ public class PlayerController : IDisposable
 
         m_CurrentLane = 1; // Banda din mijloc
         GroundY = m_Rigidbody.position.y;
+
+        // X mereu inghetat — mutat doar prin m_Rigidbody.position (bypass physics)
+        // Y inghetat implicit, deblocat doar in Jump/Roll
+        SetXFrozen(true);
+        SetYFrozen(true);
 
         Init();
     }
@@ -285,6 +293,7 @@ public class PlayerController : IDisposable
     }
 
     // Deplaseaza smooth jucatorul pe axa X catre banda tinta
+    // X este mereu inghetat de physics; il mutam direct prin .position (bypass constraints)
     private async Awaitable MovePlayerAsync()
     {
         float time = 0f;
@@ -295,11 +304,12 @@ public class PlayerController : IDisposable
 
         while (time < duration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
         {
-            MoveX(Mathf.Lerp(startX, destinationX, time * invDuration));
+            float x = Mathf.Lerp(startX, destinationX, time * invDuration);
+            m_Rigidbody.position = new Vector3(x, m_Rigidbody.position.y, m_Rigidbody.position.z);
             await Awaitable.NextFrameAsync();
             time += Time.deltaTime;
         }
-        MoveX(destinationX);
+        m_Rigidbody.position = new Vector3(destinationX, m_Rigidbody.position.y, m_Rigidbody.position.z);
     }
 
     // Incearca sa initieze un schimb de banda in aer; returneaza true daca a reusit
@@ -343,6 +353,7 @@ public class PlayerController : IDisposable
         await Awaitable.NextFrameAsync();
         await Awaitable.NextFrameAsync();
 
+        SetYFrozen(false);
         m_IsJumping = true;
         float time = 0f;
         float invDuration = 1f / JumpDuration;
@@ -361,16 +372,16 @@ public class PlayerController : IDisposable
                 AudioManager.Instance.PlaySwipe();
 
             float currentX = TickLaneX(lane, laneDuration);
-            // Arc sinusoidal: 0 → maxim la mijloc → 0
             float currentY = GroundY + JumpHeight * Mathf.Sin(Mathf.PI * (time * invDuration));
-            m_Rigidbody.MovePosition(new Vector3(currentX, currentY, m_Rigidbody.position.z));
+            m_Rigidbody.position = new Vector3(currentX, currentY, m_Rigidbody.position.z);
 
             await Awaitable.NextFrameAsync();
             time += Time.deltaTime;
         }
 
-        m_Rigidbody.MovePosition(new Vector3(m_RoadView.LanePositions[m_CurrentLane], GroundY, m_Rigidbody.position.z));
+        m_Rigidbody.position = new Vector3(m_RoadView.LanePositions[m_CurrentLane], GroundY, m_Rigidbody.position.z);
         m_IsJumping = false;
+        SetYFrozen(true);
     }
 
     // Executa rostogolirea: coborare Y → mentinere → ridicare Y
@@ -378,81 +389,101 @@ public class PlayerController : IDisposable
     private async Awaitable RollAsync()
     {
         m_IsRolling = true;
+        IsRolling = true;
 
-        // Dezactiveaza gravitatia si coliziunea cu solul pe durata rolei
-        m_Rigidbody.useGravity = false;
-        m_Rigidbody.linearVelocity = Vector3.zero;
-
-        Physics.IgnoreLayerCollision(m_PlayerLayer, m_GroundLayer, true);
-
-        // Micsoreaza capsula (jucatorul se "aplatizeaza")
-        if (m_Capsule != null)
-        {
-            m_Capsule.height = m_RollCapsuleHeight;
-            m_Capsule.center = m_RollCapsuleCenter;
-        }
-
-        await Awaitable.NextFrameAsync();
-        await Awaitable.NextFrameAsync();
-        await Awaitable.NextFrameAsync();
-
-        float laneDuration = m_RoadView.LaneChangeDuration;
-        var lane = new LaneChangeState
-        {
-            StartX = m_Rigidbody.position.x,
-            TargetX = m_RoadView.LanePositions[m_CurrentLane],
-            Active = false
-        };
-
-        // Faza 1: coboara Y la RollY
-        await RollLerpYAsync(GroundY, RollY, RollDownTime, lane, laneDuration);
-
-        // Faza 2: mentine pozitia joasa, asculta input
         bool jumpQueued = false;
-        float elapsed = 0f;
 
-        while (elapsed < RollHoldTime && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
+        try
         {
-            Movement input = ReadInputDirect();
+            SetYFrozen(false);
 
-            if (input == Movement.Jump) { jumpQueued = true; break; } // Saritura queued
+            // Dezactiveaza gravitatia si coliziunea cu solul pe durata rolei
+            m_Rigidbody.useGravity = false;
+            m_Rigidbody.linearVelocity = Vector3.zero;
 
-            if (!lane.Active && TryStartAirLaneChange(input, lane))
-                AudioManager.Instance.PlaySwipe();
+            Physics.IgnoreLayerCollision(m_PlayerLayer, m_GroundLayer, true);
 
-            float currentX = TickLaneX(lane, laneDuration);
-            m_Rigidbody.MovePosition(new Vector3(currentX, m_Rigidbody.position.y, m_Rigidbody.position.z));
+            // Micsoreaza capsula (jucatorul se "aplatizeaza")
+            if (m_Capsule != null)
+            {
+                m_Capsule.height = m_RollCapsuleHeight;
+                m_Capsule.center = m_RollCapsuleCenter;
+            }
 
-            await Awaitable.NextFrameAsync();
-            elapsed += Time.deltaTime;
-        }
+            await Awaitable.WaitForSecondsAsync(RollAnimDelay);
 
-        // Faza 3: ridica Y inapoi la GroundY
-        await RollLerpYAsync(RollY, GroundY, RollUpTime, lane, laneDuration);
+            if (m_Rigidbody == null) return;
 
-        float finalX = m_RoadView.LanePositions[m_CurrentLane];
-        m_Rigidbody.MovePosition(new Vector3(finalX, GroundY, m_Rigidbody.position.z));
+            float laneDuration = m_RoadView.LaneChangeDuration;
+            var lane = new LaneChangeState
+            {
+                StartX = m_Rigidbody.position.x,
+                TargetX = m_RoadView.LanePositions[m_CurrentLane],
+                Active = false
+            };
 
-        // Restaureaza capsula si coliziunile
-        if (m_Capsule != null)
-        {
-            m_Capsule.height = m_OriginalCapsuleHeight;
-            m_Capsule.center = m_OriginalCapsuleCenter;
-        }
+            // Faza 1: coboara Y la RollY
+            await RollLerpYAsync(GroundY, RollY, RollDownTime, lane, laneDuration);
 
-        Physics.IgnoreLayerCollision(m_PlayerLayer, m_GroundLayer, false);
-        m_Rigidbody.useGravity = false;
-        m_Rigidbody.linearVelocity = Vector3.zero;
-        m_Rigidbody.angularVelocity = Vector3.zero;
+            if (m_Rigidbody == null) return;
 
-        m_IsRolling = false;
+            // Faza 2: mentine pozitia joasa, asculta input
+            float elapsed = 0f;
 
-        // Executa saritura queued imediat dupa terminarea rolei
-        if (jumpQueued)
-        {
+            while (elapsed < RollHoldTime && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
+            {
+                if (m_Rigidbody == null) return;
+
+                Movement input = ReadInputDirect();
+
+                if (input == Movement.Jump) { jumpQueued = true; break; }
+
+                if (!lane.Active && TryStartAirLaneChange(input, lane))
+                    AudioManager.Instance.PlaySwipe();
+
+                float currentX = TickLaneX(lane, laneDuration);
+                m_Rigidbody.position = new Vector3(currentX, m_Rigidbody.position.y, m_Rigidbody.position.z);
+
+                await Awaitable.NextFrameAsync();
+                elapsed += Time.deltaTime;
+            }
+
+            if (m_Rigidbody == null) return;
+
+            // Faza 3: ridica Y inapoi la GroundY
+            await RollLerpYAsync(RollY, GroundY, RollUpTime, lane, laneDuration);
+
+            if (m_Rigidbody == null) return;
+
+            float finalX = m_RoadView.LanePositions[m_CurrentLane];
             m_Rigidbody.position = new Vector3(finalX, GroundY, m_Rigidbody.position.z);
-            m_Animator.SetTrigger(s_JumpHash);
-            await JumpAsync();
+
+            // Restaureaza capsula si coliziunile
+            if (m_Capsule != null)
+            {
+                m_Capsule.height = m_OriginalCapsuleHeight;
+                m_Capsule.center = m_OriginalCapsuleCenter;
+            }
+
+            Physics.IgnoreLayerCollision(m_PlayerLayer, m_GroundLayer, false);
+            m_Rigidbody.useGravity = false;
+            m_Rigidbody.linearVelocity = Vector3.zero;
+            m_Rigidbody.angularVelocity = Vector3.zero;
+
+            SetYFrozen(true);
+
+            // Executa saritura queued imediat dupa terminarea rolei
+            if (jumpQueued && m_Rigidbody != null)
+            {
+                m_Rigidbody.position = new Vector3(finalX, GroundY, m_Rigidbody.position.z);
+                m_Animator.SetTrigger(s_JumpHash);
+                await JumpAsync();
+            }
+        }
+        finally
+        {
+            m_IsRolling = false;
+            IsRolling = false;
         }
     }
 
@@ -465,16 +496,34 @@ public class PlayerController : IDisposable
 
         while (elapsed < duration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
         {
+            if (m_Rigidbody == null) return;
+
             if (!lane.Active && TryStartAirLaneChange(ReadInputDirect(), lane))
                 AudioManager.Instance.PlaySwipe();
 
             float currentX = TickLaneX(lane, laneDuration);
             float currentY = Mathf.Lerp(fromY, toY, elapsed * invDuration);
-            m_Rigidbody.MovePosition(new Vector3(currentX, currentY, m_Rigidbody.position.z));
+            m_Rigidbody.position = new Vector3(currentX, currentY, m_Rigidbody.position.z);
 
             await Awaitable.NextFrameAsync();
             elapsed += Time.deltaTime;
         }
+    }
+
+    private void SetYFrozen(bool frozen)
+    {
+        if (frozen)
+            m_Rigidbody.constraints |= RigidbodyConstraints.FreezePositionY;
+        else
+            m_Rigidbody.constraints &= ~RigidbodyConstraints.FreezePositionY;
+    }
+
+    private void SetXFrozen(bool frozen)
+    {
+        if (frozen)
+            m_Rigidbody.constraints |= RigidbodyConstraints.FreezePositionX;
+        else
+            m_Rigidbody.constraints &= ~RigidbodyConstraints.FreezePositionX;
     }
 
     // Utilitare: deplaseaza rigidbody doar pe o singura axa

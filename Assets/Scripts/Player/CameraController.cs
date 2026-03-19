@@ -12,8 +12,12 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float zoomSpeedModifier = 1f; // Cat de mult afecteaza viteza FOV-ul
     [SerializeField] private float resetFOVDuration = 1f;
 
+    [Header("Shake")]
+    [SerializeField] private CinemachineImpulseSource impulseSource;
+    [SerializeField] private float shakeIntensity = 0.3f;
+
     private CinemachineCamera cinemachineCamera;
-    private Coroutine fovCoroutine; // Referinta la coroutine activa (pentru a o putea intrerupe)
+    private Coroutine fovCoroutine;
     private PlayerRespawnManager m_RespawnManager;
 
     private void Awake()
@@ -60,6 +64,9 @@ public class CameraController : MonoBehaviour
         speedupParticleSystem?.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         fovCoroutine = StartCoroutine(ResetFOVRoutine());
     }
+
+    // Shake la lovirea unui obstacol in Rush
+    public void Shake() => impulseSource?.GenerateImpulse(shakeIntensity);
 
     // Porneste sau opreste efectul de particule (apelat din exterior)
     public void SetSpeedupEffectActive(bool isActive)

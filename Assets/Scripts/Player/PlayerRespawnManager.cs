@@ -19,6 +19,7 @@ public class PlayerRespawnManager : MonoBehaviour
     public void SpawnPlayer()
     {
         levelGenerator?.ResetMoveSpeed(); // Reseteaza viteza la fiecare respawn
+        RushEffect.ResetObstacleBonus(); // Reseteaza bonusul de obstacole lovite in Rush
 
         if (CurrentPlayer != null)
             Destroy(CurrentPlayer);

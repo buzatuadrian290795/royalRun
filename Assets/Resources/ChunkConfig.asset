@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41f13eb311c4f2948bc5010feeebf287, type: 3}
+  m_Name: ChunkConfig
+  m_EditorClassIdentifier: Assembly-CSharp::ChunkConfig
+  obstaclePrefabs:
+  - {fileID: 4280226272728789475, guid: fcbfe1666e868a249947825dc505cfbf, type: 3}
+  - {fileID: 7137255509243367603, guid: 2eebf47fcea43ed46ac604b262670cf5, type: 3}
+  - {fileID: 8339986586608087906, guid: 1a3db1d8928405b4c9eca4efb12651d6, type: 3}
+  - {fileID: 6584017908119643562, guid: 5d140576af69c6b45b702d2829dd0c81, type: 3}
+  - {fileID: 479362154926380285, guid: c6c5be0c148b69240b42b2cbdb5e81aa, type: 3}
+  applePrefab: {fileID: 1923806007615572051, guid: 4e8d30bcbaeb35743ae12f059061a0fc, type: 3}
+  coinPrefab: {fileID: 6882302745150051159, guid: a8268d37e10554c41acbf63294686281, type: 3}
+  minObstaclesToSpawn: 0
+  maxObstaclesToSpawn: 2
+  appleSpawnChance: 0.3
+  coinSpawnChance: 1
+  magnetSpawnChance: 0.03
+  magnetPrefab: {fileID: 3829934852673001935, guid: 7c124f7109bd22d4b8d325b423ef5bfe, type: 3}
+  magnetDuration: 10
+  magnetAttractSpeed: 15
+  magnetAttractRadius: 20
+  rushPrefab: {fileID: 3829934852673001935, guid: 79c2469c87593b343998cb17248ad057, type: 3}
+  rushDuration: 10
+  rushSpawnChance: 0.119479015
+  coinSeparationLength: 2
+  minCoinsToSpawn: 1
+  maxCoinsToSpawn: 10

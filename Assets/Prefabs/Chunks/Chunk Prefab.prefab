@@ -9,14 +9,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3605736613045634948}
-  - component: {fileID: -5523180873633524102}
   m_Layer: 0
   m_Name: Chunk Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &3605736613045634948
 Transform:
   m_ObjectHideFlags: 0
@@ -33,43 +32,6 @@ Transform:
   - {fileID: 1325152567595458130}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &-5523180873633524102
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4979888908822816033}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6314833937a3e9f4b846beef890091cb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Chunk
-  obstaclePrefabs:
-  - {fileID: 665691124869317631, guid: 1b10fe1f2e64ca1438aa6ac329037f43, type: 3}
-  - {fileID: 8339986586608087906, guid: 1a3db1d8928405b4c9eca4efb12651d6, type: 3}
-  - {fileID: 7137255509243367603, guid: 2eebf47fcea43ed46ac604b262670cf5, type: 3}
-  - {fileID: 7827495774461422248, guid: c6c5be0c148b69240b42b2cbdb5e81aa, type: 3}
-  - {fileID: 7827495774461422248, guid: 5d140576af69c6b45b702d2829dd0c81, type: 3}
-  - {fileID: 4280226272728789475, guid: fcbfe1666e868a249947825dc505cfbf, type: 3}
-  applePrefab: {fileID: 1923806007615572051, guid: 4e8d30bcbaeb35743ae12f059061a0fc, type: 3}
-  coinPrefab: {fileID: 6882302745150051159, guid: a8268d37e10554c41acbf63294686281, type: 3}
-  obstacleDensity: 0.5
-  minObstaclesToSpawn: 0
-  maxObstaclesToSpawn: 2
-  appleSpawnChance: 0.3
-  coinSpawnChance: 0.5
-  coinSeparationLength: 2
-  minCoinsToSpawn: 1
-  maxCoinsToSpawn: 6
-  obstacleLanes:
-  - -3
-  - 0
-  - 3
-  pickupLanes:
-  - -2.5
-  - 0
-  - 2.5
 --- !u!1 &6015093140086076340
 GameObject:
   m_ObjectHideFlags: 0
