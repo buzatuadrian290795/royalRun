@@ -12,6 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41f13eb311c4f2948bc5010feeebf287, type: 3}
   m_Name: ChunkConfig
   m_EditorClassIdentifier: Assembly-CSharp::ChunkConfig
+  chunkPrefabs:
+  - {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
+  - {fileID: 4979888908822816033, guid: 3b24ec0179395dc488f270a7d9cb2dfe, type: 3}
+  - {fileID: 4979888908822816033, guid: 0fae6578f1bc0f24c97f97a94b81916a, type: 3}
+  - {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
+  - {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
   obstaclePrefabs:
   - {fileID: 4280226272728789475, guid: fcbfe1666e868a249947825dc505cfbf, type: 3}
   - {fileID: 7137255509243367603, guid: 2eebf47fcea43ed46ac604b262670cf5, type: 3}

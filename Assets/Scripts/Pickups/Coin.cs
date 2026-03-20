@@ -1,5 +1,13 @@
+using System.Collections.Generic;
+using UnityEngine;
+
 public class Coin : Pickup
 {
+    public static readonly List<Coin> All = new List<Coin>();
+
+    private void OnEnable()  => All.Add(this);
+    private void OnDisable() => All.Remove(this);
+
     protected override void OnPickup()
     {
         // Adauga monede in functie de multiplicatorul curent de viteza

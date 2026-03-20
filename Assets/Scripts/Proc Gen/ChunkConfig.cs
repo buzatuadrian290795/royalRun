@@ -3,6 +3,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "ChunkConfig", menuName = "Royal Run/Chunk Config")]
 public class ChunkConfig : ScriptableObject
 {
+    [Header("Chunk Prefabs")]
+    public GameObject[] chunkPrefabs;
+
     [Header("Prefabs")]
     public GameObject[] obstaclePrefabs;
     public GameObject applePrefab;

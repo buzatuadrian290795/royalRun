@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a583ac4791c7c9d4c836ab5017765c64, type: 3}
+  m_Name: BuildingChunkConfig
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingChunkConfig
+  buildingPrefabs:
+  - {fileID: 100000, guid: 3e775e81f9d03d2479562071ec3d85ec, type: 3}
+  - {fileID: 100000, guid: 73722d96c4a048646886d6c8dfe3e6d7, type: 3}
+  - {fileID: 100000, guid: 00fb4c302dcc9ed41b833bcc293fcf92, type: 3}
+  - {fileID: 100000, guid: d17bfd5ab0358da4298166cb2419a676, type: 3}
+  - {fileID: 100000, guid: 39df401245ad90441ae705eb44abf921, type: 3}
+  - {fileID: 100000, guid: 600361046ea120649bf184a479e5a633, type: 3}
+  leftX: -13.5
+  rightX: 13.5
+  buildingY: 0
+  leftYRotation: 90
+  rightYRotation: -90
+  fillerPrefabs: []
+  fillerCountPerChunk: 4
+  fillerY: 0

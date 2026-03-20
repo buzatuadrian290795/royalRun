@@ -23,7 +23,6 @@ public abstract class Pickup : MonoBehaviour
     }
 
     private void OnTriggerEnter(Collider other) => TryPickup(other);
-    private void OnTriggerStay(Collider other) => TryPickup(other);
 
     private void TryPickup(Collider other)
     {

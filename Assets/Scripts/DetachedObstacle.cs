@@ -40,8 +40,9 @@ public class DetachedObstacle : MonoBehaviour
 
     private bool IsStill()
     {
-        return m_Rigidbody.linearVelocity.magnitude  < sleepVelocityThreshold &&
-               m_Rigidbody.angularVelocity.magnitude < sleepVelocityThreshold;
+        float threshold = sleepVelocityThreshold * sleepVelocityThreshold;
+        return m_Rigidbody.linearVelocity.sqrMagnitude  < threshold &&
+               m_Rigidbody.angularVelocity.sqrMagnitude < threshold;
     }
 
     private void Reattach()
@@ -67,11 +68,10 @@ public class DetachedObstacle : MonoBehaviour
 
     private Transform FindNearestChunk()
     {
-        Chunk[] chunks = FindObjectsByType<Chunk>(FindObjectsSortMode.None);
         Transform best = null;
         float bestDist = float.MaxValue;
 
-        foreach (Chunk chunk in chunks)
+        foreach (Chunk chunk in Chunk.All)
         {
             float dist = Mathf.Abs(chunk.transform.position.z - transform.position.z);
             if (dist < bestDist)
