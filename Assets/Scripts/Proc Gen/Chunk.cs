@@ -6,6 +6,31 @@ public class Chunk : MonoBehaviour
 {
     public static readonly List<Chunk> All = new List<Chunk>();
 
+    // Offset-uri locale (fata de pivot) catre inceputul si sfarsitul mesh-ului pe axa Z
+    // Calculat la Awake cu chunk-ul la origin, deci reprezinta offsetul real fata de pivot
+    public float LocalMinZ { get; private set; }
+    public float LocalMaxZ { get; private set; }
+    public float Length => LocalMaxZ - LocalMinZ;
+
+    private void Awake()
+    {
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0)
+        {
+            LocalMinZ = 0f;
+            LocalMaxZ = 16f;
+            return;
+        }
+
+        Bounds combined = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+            combined.Encapsulate(renderers[i].bounds);
+
+        // bounds sunt in world space; scadem pozitia curenta ca sa obtinem offset-ul local
+        LocalMinZ = combined.min.z - transform.position.z;
+        LocalMaxZ = combined.max.z - transform.position.z;
+    }
+
     private void OnEnable()  => All.Add(this);
     private void OnDisable() => All.Remove(this);
 

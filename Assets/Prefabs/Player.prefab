@@ -96,7 +96,9 @@ MonoBehaviour:
   playerView: {fileID: 2886619608994256899}
   meshRenderer: {fileID: 5832533965228353327}
   ragdollController: {fileID: 2313219975931908166}
-  rushHitForce: 15
+  rushHitForce: 5
+  rushHitForceY: 20
+  rushHitForceZ: 20
 --- !u!114 &6990036218672289781
 MonoBehaviour:
   m_ObjectHideFlags: 0

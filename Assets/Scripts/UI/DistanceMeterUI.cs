@@ -12,6 +12,8 @@ public class DistanceMeterUI : MonoBehaviour
     // Cat de multi metri reprezinta o unitate de viteza (regleaza din Inspector)
     [SerializeField] private float speedToDistanceRatio = 4f;
 
+    private const string DistanceKey = "TotalDistance";
+
     private long lastMeters = -1;       // Ultimul numar de metri afisati (evita update inutil)
     private float distanceTravelled;     // Distanta acumulata in unitati float
 
@@ -29,6 +31,9 @@ public class DistanceMeterUI : MonoBehaviour
         if (distanceText == null) Debug.LogError("DistanceMeter: distanceText is not set.");
         if (levelGenerator == null) Debug.LogError("DistanceMeter: LevelGenerator not found.");
         if (playerRespawnManager == null) Debug.LogError("DistanceMeter: PlayerRespawnManager not found.");
+
+        distanceTravelled = PlayerPrefs.GetFloat(DistanceKey, 0f);
+        lastMeters = Mathf.FloorToInt(distanceTravelled);
     }
 
     private void FixedUpdate()
@@ -46,6 +51,7 @@ public class DistanceMeterUI : MonoBehaviour
         {
             lastMeters = meters;
             distanceText.text = FormatDistance(meters);
+            PlayerPrefs.SetFloat(DistanceKey, distanceTravelled);
         }
     }
 
@@ -72,6 +78,7 @@ public class DistanceMeterUI : MonoBehaviour
         cachedPlayer = null;
         cachedRagdoll = null;
         lastMeters = 0;
+        PlayerPrefs.SetFloat(DistanceKey, 0f);
         if (distanceText != null)
             distanceText.text = FormatDistance(0);
     }

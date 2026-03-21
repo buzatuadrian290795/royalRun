@@ -14,16 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ChunkConfig
   chunkPrefabs:
   - {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
-  - {fileID: 4979888908822816033, guid: 3b24ec0179395dc488f270a7d9cb2dfe, type: 3}
+  - {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
   - {fileID: 4979888908822816033, guid: 0fae6578f1bc0f24c97f97a94b81916a, type: 3}
   - {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
   - {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
+  - {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
+  - {fileID: 4979888908822816033, guid: defe675d681b94444bf06e30b46bea8d, type: 3}
   obstaclePrefabs:
-  - {fileID: 4280226272728789475, guid: fcbfe1666e868a249947825dc505cfbf, type: 3}
-  - {fileID: 7137255509243367603, guid: 2eebf47fcea43ed46ac604b262670cf5, type: 3}
-  - {fileID: 8339986586608087906, guid: 1a3db1d8928405b4c9eca4efb12651d6, type: 3}
-  - {fileID: 6584017908119643562, guid: 5d140576af69c6b45b702d2829dd0c81, type: 3}
-  - {fileID: 479362154926380285, guid: c6c5be0c148b69240b42b2cbdb5e81aa, type: 3}
+  - {fileID: 7827495774461422248, guid: 327620b94abb92449b604f7504629ec7, type: 3}
+  - {fileID: 7827495774461422248, guid: aac29f37df2bea94890956df30cd79e4, type: 3}
+  - {fileID: 7827495774461422248, guid: 9225f3fa29dbae148a2363a1ed5f8250, type: 3}
+  - {fileID: 7827495774461422248, guid: 8e3832c2b47359c45be9e2cdab1ea30a, type: 3}
   applePrefab: {fileID: 1923806007615572051, guid: 4e8d30bcbaeb35743ae12f059061a0fc, type: 3}
   coinPrefab: {fileID: 6882302745150051159, guid: a8268d37e10554c41acbf63294686281, type: 3}
   minObstaclesToSpawn: 0

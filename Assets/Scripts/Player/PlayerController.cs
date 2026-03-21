@@ -109,8 +109,10 @@ public class PlayerController : IDisposable
 
         // X mereu inghetat — mutat doar prin m_Rigidbody.position (bypass physics)
         // Y inghetat implicit, deblocat doar in Jump/Roll
+        // Z mereu inghetat — jucatorul nu se misca pe Z, doar chunk-urile
         SetXFrozen(true);
         SetYFrozen(true);
+        m_Rigidbody.constraints |= RigidbodyConstraints.FreezePositionZ;
 
         Init();
     }

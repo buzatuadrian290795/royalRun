@@ -16,7 +16,6 @@ public class LevelGenerator : MonoBehaviour
 
     [Header("Settings")]
     [SerializeField] int startingChunksAmount = 12;
-    [SerializeField] float chunkLength = 16f;
     [SerializeField] float moveSpeed = 8f;
     [SerializeField] float minMoveSpeed = 8f;
     [SerializeField] float maxMoveSpeed = 44f;
@@ -26,11 +25,13 @@ public class LevelGenerator : MonoBehaviour
     private List<GameObject> m_Buildings = new List<GameObject>();
     private Camera m_MainCamera;
     private int m_LastChunkIndex = -1;
-    private int m_LastBuildingIndex = -1;
+    private int m_LastBuildingIndexLeft = -1;
+    private int m_LastBuildingIndexRight = -1;
+    private float m_LastChunkLength = 16f; // fallback pana la primul chunk spawnat
 
     public float MoveSpeed => moveSpeed;
     public float ObstacleDensity => obstacleDensity;
-    public float ChunkLength => chunkLength;
+    public float ChunkLength => m_LastChunkLength;
     public int StartingChunksAmount => startingChunksAmount;
     public RoadView RoadView => roadView;
     public float MaxMoveSpeed => maxMoveSpeed;
@@ -60,10 +61,7 @@ public class LevelGenerator : MonoBehaviour
     {
         m_MainCamera = Camera.main;
         if (roadView == null) roadView = FindFirstObjectByType<RoadView>();
-    }
-
-    private void Start()
-    {
+        SpawnLeadChunk();
         SpawnStartingChunks();
     }
 
@@ -108,12 +106,36 @@ public class LevelGenerator : MonoBehaviour
 
         foreach (var building in m_Buildings) { if (building != null) Destroy(building); }
         m_Buildings.Clear();
-        m_LastBuildingIndex = -1;
+        m_LastBuildingIndexLeft = -1;
+        m_LastBuildingIndexRight = -1;
 
         SpawnStartingChunks();
     }
 
     // --- Chunks ---
+
+    // Spawneaza un chunk inainte de toate celelalte, lipit in spatele pozitiei de start
+    private void SpawnLeadChunk()
+    {
+        if (chunkConfig == null || chunkConfig.chunkPrefabs == null || chunkConfig.chunkPrefabs.Length == 0) return;
+
+        int index = PickRandom(chunkConfig.chunkPrefabs.Length, ref m_LastChunkIndex);
+        GameObject prefab = chunkConfig.chunkPrefabs[index];
+        if (prefab == null) return;
+
+        GameObject chunkGO = Instantiate(prefab, Vector3.zero, Quaternion.identity, chunkParent);
+        Chunk chunk = chunkGO.GetComponent<Chunk>() ?? chunkGO.AddComponent<Chunk>();
+
+        // Sfarsitul vizual al acestui chunk = inceputul pozitiei de start (transform.position.z)
+        float spawnZ = transform.position.z - chunk.LocalMaxZ;
+        chunkGO.transform.position = new Vector3(transform.position.x, transform.position.y, spawnZ);
+
+        chunk.Initialize(this, chunkConfig, obstacleDensity);
+        m_Chunks.Add(chunk);
+        m_LastChunkLength = chunk.Length;
+
+        SpawnBuildingPair(spawnZ);
+    }
 
     private void SpawnStartingChunks()
     {
@@ -129,19 +151,23 @@ public class LevelGenerator : MonoBehaviour
             return;
         }
 
-        Vector3 spawnPos = new Vector3(transform.position.x, transform.position.y, CalculateSpawnPositionZ());
-
         int index = PickRandom(chunkConfig.chunkPrefabs.Length, ref m_LastChunkIndex);
         GameObject prefab = chunkConfig.chunkPrefabs[index];
         if (prefab == null) { Debug.LogError($"LevelGenerator: chunkPrefab null la index {index}."); return; }
 
-        GameObject chunkGO = Instantiate(prefab, spawnPos, Quaternion.identity, chunkParent);
+        // Instantiem la origin ca Awake() sa calculeze LocalMinZ/LocalMaxZ corect (bounds in world space = local space)
+        GameObject chunkGO = Instantiate(prefab, Vector3.zero, Quaternion.identity, chunkParent);
         Chunk chunk = chunkGO.GetComponent<Chunk>() ?? chunkGO.AddComponent<Chunk>();
+
+        // Calculam Z-ul exact: capatul din dreapta al ultimului chunk - offsetul de inceput al celui nou
+        float spawnZ = CalculateSpawnPositionZ(chunk);
+        chunkGO.transform.position = new Vector3(transform.position.x, transform.position.y, spawnZ);
 
         chunk.Initialize(this, chunkConfig, obstacleDensity);
         m_Chunks.Add(chunk);
+        m_LastChunkLength = chunk.Length;
 
-        SpawnBuildingPair(spawnPos.z);
+        SpawnBuildingPair(spawnZ);
     }
 
     private void MoveChunks()
@@ -153,7 +179,7 @@ public class LevelGenerator : MonoBehaviour
             Chunk chunk = m_Chunks[i];
             chunk.transform.position += Vector3.back * (moveSpeed * Time.deltaTime);
 
-            if (chunk.transform.position.z <= cameraZ - chunkLength)
+            if (chunk.transform.position.z <= cameraZ - chunk.Length)
             {
                 m_Chunks.RemoveAt(i);
                 chunk.Cleanup();
@@ -163,10 +189,16 @@ public class LevelGenerator : MonoBehaviour
         }
     }
 
-    private float CalculateSpawnPositionZ()
+    // Calculeaza Z-ul pivot-ului noului chunk astfel incat mesh-ul sau sa inceapa exact
+    // acolo unde se termina mesh-ul ultimului chunk existent
+    private float CalculateSpawnPositionZ(Chunk newChunk)
     {
-        if (m_Chunks.Count == 0) return transform.position.z;
-        return m_Chunks[m_Chunks.Count - 1].transform.position.z + chunkLength;
+        if (m_Chunks.Count == 0)
+            return transform.position.z - newChunk.LocalMinZ;
+
+        Chunk last = m_Chunks[m_Chunks.Count - 1];
+        float lastWorldEndZ = last.transform.position.z + last.LocalMaxZ;
+        return lastWorldEndZ - newChunk.LocalMinZ;
     }
 
     // --- Buildings ---
@@ -184,11 +216,15 @@ public class LevelGenerator : MonoBehaviour
             return;
         }
 
-        int index = PickRandom(buildingChunkConfig.buildingPrefabs.Length, ref m_LastBuildingIndex);
-        GameObject prefab = buildingChunkConfig.buildingPrefabs[index];
+        int leftIndex = PickRandom(buildingChunkConfig.buildingPrefabs.Length, ref m_LastBuildingIndexLeft);
+        int rightIndex = PickRandom(buildingChunkConfig.buildingPrefabs.Length, ref m_LastBuildingIndexRight);
 
-        SpawnBuilding(buildingChunkConfig.leftX, buildingChunkConfig.leftYRotation, z, prefab);
-        SpawnBuilding(buildingChunkConfig.rightX, buildingChunkConfig.rightYRotation, z, prefab);
+        // Garantam ca stanga si dreapta sunt prefab-uri diferite
+        if (buildingChunkConfig.buildingPrefabs.Length > 1 && rightIndex == leftIndex)
+            rightIndex = (rightIndex + 1) % buildingChunkConfig.buildingPrefabs.Length;
+
+        SpawnBuilding(buildingChunkConfig.leftX, buildingChunkConfig.leftYRotation, z, buildingChunkConfig.buildingPrefabs[leftIndex]);
+        SpawnBuilding(buildingChunkConfig.rightX, buildingChunkConfig.rightYRotation, z, buildingChunkConfig.buildingPrefabs[rightIndex]);
 
         SpawnFillers(z);
     }
@@ -199,7 +235,7 @@ public class LevelGenerator : MonoBehaviour
 
         for (int i = 0; i < buildingChunkConfig.fillerCountPerChunk; i++)
         {
-            float fillerZ = z + Random.Range(0f, chunkLength);
+            float fillerZ = z + Random.Range(0f, m_LastChunkLength);
             GameObject prefab = buildingChunkConfig.fillerPrefabs[Random.Range(0, buildingChunkConfig.fillerPrefabs.Length)];
             if (prefab == null) continue;
 
@@ -246,7 +282,7 @@ public class LevelGenerator : MonoBehaviour
 
             building.transform.position += Vector3.back * (moveSpeed * Time.deltaTime);
 
-            if (building.transform.position.z <= cameraZ - chunkLength)
+            if (building.transform.position.z <= cameraZ - m_LastChunkLength)
             {
                 m_Buildings.RemoveAt(i);
                 Destroy(building);
