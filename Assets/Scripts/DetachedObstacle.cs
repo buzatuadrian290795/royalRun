@@ -13,6 +13,11 @@ public class DetachedObstacle : MonoBehaviour
         m_Renderer = GetComponentInChildren<Renderer>();
     }
 
+    private void OnEnable()
+    {
+        m_Camera = Camera.main;
+    }
+
     private void Update()
     {
         if (m_Camera == null) return;

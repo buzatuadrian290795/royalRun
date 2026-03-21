@@ -11,6 +11,7 @@ public class Chunk : MonoBehaviour
     public float LocalMinZ { get; private set; }
     public float LocalMaxZ { get; private set; }
     public float Length => LocalMaxZ - LocalMinZ;
+    public GameObject SourcePrefab { get; set; }
 
     private void Awake()
     {

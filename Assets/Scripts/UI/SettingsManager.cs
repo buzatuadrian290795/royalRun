@@ -66,6 +66,8 @@ public class SettingsManager : MonoBehaviour
     {
         m_QualityLevel = value;
         QualitySettings.SetQualityLevel(value);
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = m_TargetFPS;
         ApplyURPQuality(value);
         PlayerPrefs.SetInt("QualityLevel", value);
     }
@@ -129,6 +131,7 @@ public class SettingsManager : MonoBehaviour
     // Aplica setarile de grafica in engine (AudioManager nu e inca disponibil la Load din Awake)
     private void Apply()
     {
+        QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = m_TargetFPS;
         QualitySettings.SetQualityLevel(m_QualityLevel);
         ApplyURPQuality(m_QualityLevel);

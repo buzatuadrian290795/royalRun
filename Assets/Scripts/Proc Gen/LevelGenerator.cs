@@ -15,7 +15,7 @@ public class LevelGenerator : MonoBehaviour
     [SerializeField] Transform buildingParent;
 
     [Header("Settings")]
-    [SerializeField] int startingChunksAmount = 12;
+    [SerializeField] int startingChunksAmount = 16;
     [SerializeField] float moveSpeed = 8f;
     [SerializeField] float minMoveSpeed = 8f;
     [SerializeField] float maxMoveSpeed = 44f;
@@ -28,6 +28,11 @@ public class LevelGenerator : MonoBehaviour
     private int m_LastBuildingIndexLeft = -1;
     private int m_LastBuildingIndexRight = -1;
     private float m_LastChunkLength = 16f; // fallback pana la primul chunk spawnat
+
+    // Object pools
+    private readonly Dictionary<GameObject, Queue<Chunk>> m_ChunkPool = new Dictionary<GameObject, Queue<Chunk>>();
+    private readonly Dictionary<GameObject, Queue<GameObject>> m_BuildingPool = new Dictionary<GameObject, Queue<GameObject>>();
+    private readonly Dictionary<GameObject, GameObject> m_BuildingToPrefab = new Dictionary<GameObject, GameObject>();
 
     public float MoveSpeed => moveSpeed;
     public float ObstacleDensity => obstacleDensity;
@@ -100,11 +105,11 @@ public class LevelGenerator : MonoBehaviour
 
     public void RespawnChunks()
     {
-        foreach (var chunk in m_Chunks) { chunk.Cleanup(); Destroy(chunk.gameObject); }
+        foreach (var chunk in m_Chunks) ReturnChunkToPool(chunk);
         m_Chunks.Clear();
         m_LastChunkIndex = -1;
 
-        foreach (var building in m_Buildings) { if (building != null) Destroy(building); }
+        foreach (var building in m_Buildings) { if (building != null) ReturnBuildingToPool(building); }
         m_Buildings.Clear();
         m_LastBuildingIndexLeft = -1;
         m_LastBuildingIndexRight = -1;
@@ -123,13 +128,11 @@ public class LevelGenerator : MonoBehaviour
         GameObject prefab = chunkConfig.chunkPrefabs[index];
         if (prefab == null) return;
 
-        GameObject chunkGO = Instantiate(prefab, Vector3.zero, Quaternion.identity, chunkParent);
-        Chunk chunk = chunkGO.GetComponent<Chunk>() ?? chunkGO.AddComponent<Chunk>();
+        Chunk chunk = GetChunkFromPool(prefab);
 
-        // Sfarsitul vizual al acestui chunk = inceputul pozitiei de start (transform.position.z)
         float spawnZ = transform.position.z - chunk.LocalMaxZ;
-        chunkGO.transform.position = new Vector3(transform.position.x, transform.position.y, spawnZ);
-
+        chunk.transform.position = new Vector3(transform.position.x, transform.position.y, spawnZ);
+        chunk.gameObject.SetActive(true);
         chunk.Initialize(this, chunkConfig, obstacleDensity);
         m_Chunks.Add(chunk);
         m_LastChunkLength = chunk.Length;
@@ -139,8 +142,11 @@ public class LevelGenerator : MonoBehaviour
 
     private void SpawnStartingChunks()
     {
-        for (int i = 0; i < startingChunksAmount; i++)
-            SpawnChunk();
+        float spawnThreshold = m_MainCamera.transform.position.z + m_MainCamera.farClipPlane;
+
+        do { SpawnChunk(); }
+        while (m_Chunks.Count < startingChunksAmount ||
+               m_Chunks[m_Chunks.Count - 1].transform.position.z + m_Chunks[m_Chunks.Count - 1].LocalMaxZ < spawnThreshold);
     }
 
     private void SpawnChunk()
@@ -155,14 +161,11 @@ public class LevelGenerator : MonoBehaviour
         GameObject prefab = chunkConfig.chunkPrefabs[index];
         if (prefab == null) { Debug.LogError($"LevelGenerator: chunkPrefab null la index {index}."); return; }
 
-        // Instantiem la origin ca Awake() sa calculeze LocalMinZ/LocalMaxZ corect (bounds in world space = local space)
-        GameObject chunkGO = Instantiate(prefab, Vector3.zero, Quaternion.identity, chunkParent);
-        Chunk chunk = chunkGO.GetComponent<Chunk>() ?? chunkGO.AddComponent<Chunk>();
+        Chunk chunk = GetChunkFromPool(prefab);
 
-        // Calculam Z-ul exact: capatul din dreapta al ultimului chunk - offsetul de inceput al celui nou
         float spawnZ = CalculateSpawnPositionZ(chunk);
-        chunkGO.transform.position = new Vector3(transform.position.x, transform.position.y, spawnZ);
-
+        chunk.transform.position = new Vector3(transform.position.x, transform.position.y, spawnZ);
+        chunk.gameObject.SetActive(true);
         chunk.Initialize(this, chunkConfig, obstacleDensity);
         m_Chunks.Add(chunk);
         m_LastChunkLength = chunk.Length;
@@ -173,6 +176,7 @@ public class LevelGenerator : MonoBehaviour
     private void MoveChunks()
     {
         float cameraZ = m_MainCamera.transform.position.z;
+        bool needsRefill = false;
 
         for (int i = m_Chunks.Count - 1; i >= 0; i--)
         {
@@ -182,10 +186,18 @@ public class LevelGenerator : MonoBehaviour
             if (chunk.transform.position.z <= cameraZ - chunk.Length)
             {
                 m_Chunks.RemoveAt(i);
-                chunk.Cleanup();
-                Destroy(chunk.gameObject);
-                SpawnChunk();
+                ReturnChunkToPool(chunk);
+                needsRefill = true;
             }
+        }
+
+        // Spawneaza doar cand un chunk a fost scos, pana lantul depaseste far clip plane
+        if (needsRefill)
+        {
+            float spawnThreshold = cameraZ + m_MainCamera.farClipPlane;
+            while (m_Chunks.Count == 0 ||
+                   m_Chunks[m_Chunks.Count - 1].transform.position.z + m_Chunks[m_Chunks.Count - 1].LocalMaxZ < spawnThreshold)
+                SpawnChunk();
         }
     }
 
@@ -241,14 +253,16 @@ public class LevelGenerator : MonoBehaviour
 
             float randomRotY = Random.Range(0f, 360f);
 
-            GameObject left = Instantiate(prefab,
+            GameObject left = GetBuildingFromPool(
+                prefab,
                 new Vector3(buildingChunkConfig.leftX, buildingChunkConfig.fillerY, fillerZ),
-                Quaternion.Euler(0f, randomRotY, 0f), buildingParent);
+                Quaternion.Euler(0f, randomRotY, 0f));
             m_Buildings.Add(left);
 
-            GameObject right = Instantiate(prefab,
+            GameObject right = GetBuildingFromPool(
+                prefab,
                 new Vector3(buildingChunkConfig.rightX, buildingChunkConfig.fillerY, fillerZ),
-                Quaternion.Euler(0f, randomRotY, 0f), buildingParent);
+                Quaternion.Euler(0f, randomRotY, 0f));
             m_Buildings.Add(right);
         }
     }
@@ -261,12 +275,10 @@ public class LevelGenerator : MonoBehaviour
             return;
         }
 
-        GameObject obj = Instantiate(
+        GameObject obj = GetBuildingFromPool(
             prefab,
             new Vector3(x, buildingChunkConfig.buildingY, z),
-            Quaternion.Euler(0f, yRotation, 0f),
-            buildingParent
-        );
+            Quaternion.Euler(0f, yRotation, 0f));
 
         m_Buildings.Add(obj);
     }
@@ -285,8 +297,83 @@ public class LevelGenerator : MonoBehaviour
             if (building.transform.position.z <= cameraZ - m_LastChunkLength)
             {
                 m_Buildings.RemoveAt(i);
-                Destroy(building);
+                ReturnBuildingToPool(building);
             }
+        }
+    }
+
+    // --- Object Pools ---
+
+    private Chunk GetChunkFromPool(GameObject prefab)
+    {
+        if (!m_ChunkPool.TryGetValue(prefab, out Queue<Chunk> pool))
+        {
+            pool = new Queue<Chunk>();
+            m_ChunkPool[prefab] = pool;
+        }
+
+        if (pool.Count > 0)
+            return pool.Dequeue();
+
+        // Prima instantiere: la origin ca Awake sa calculeze bounds corect
+        GameObject chunkGO = Instantiate(prefab, Vector3.zero, Quaternion.identity, chunkParent);
+        Chunk chunk = chunkGO.GetComponent<Chunk>() ?? chunkGO.AddComponent<Chunk>();
+        chunk.SourcePrefab = prefab;
+        chunkGO.SetActive(false); // dezactiveaza imediat dupa ce Awake a rulat
+        return chunk;
+    }
+
+    private void ReturnChunkToPool(Chunk chunk)
+    {
+        chunk.Cleanup();
+        chunk.gameObject.SetActive(false);
+
+        if (!m_ChunkPool.TryGetValue(chunk.SourcePrefab, out Queue<Chunk> pool))
+        {
+            pool = new Queue<Chunk>();
+            m_ChunkPool[chunk.SourcePrefab] = pool;
+        }
+
+        pool.Enqueue(chunk);
+    }
+
+    private GameObject GetBuildingFromPool(GameObject prefab, Vector3 position, Quaternion rotation)
+    {
+        if (!m_BuildingPool.TryGetValue(prefab, out Queue<GameObject> pool))
+        {
+            pool = new Queue<GameObject>();
+            m_BuildingPool[prefab] = pool;
+        }
+
+        if (pool.Count > 0)
+        {
+            GameObject pooled = pool.Dequeue();
+            pooled.transform.SetPositionAndRotation(position, rotation);
+            pooled.SetActive(true);
+            return pooled;
+        }
+
+        GameObject obj = Instantiate(prefab, position, rotation, buildingParent);
+        m_BuildingToPrefab[obj] = prefab;
+        return obj;
+    }
+
+    private void ReturnBuildingToPool(GameObject building)
+    {
+        building.SetActive(false);
+
+        if (m_BuildingToPrefab.TryGetValue(building, out GameObject prefab))
+        {
+            if (!m_BuildingPool.TryGetValue(prefab, out Queue<GameObject> pool))
+            {
+                pool = new Queue<GameObject>();
+                m_BuildingPool[prefab] = pool;
+            }
+            pool.Enqueue(building);
+        }
+        else
+        {
+            Destroy(building);
         }
     }
 
