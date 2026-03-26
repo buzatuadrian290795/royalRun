@@ -26,6 +26,7 @@ public class RushEffect : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        m_LevelGenerator = FindFirstObjectByType<LevelGenerator>();
     }
 
     private void OnDestroy()
@@ -40,8 +41,6 @@ public class RushEffect : MonoBehaviour
         m_GraceRemaining = 0f;
         m_IsActive = true;
 
-        if (m_LevelGenerator == null)
-            m_LevelGenerator = FindFirstObjectByType<LevelGenerator>();
         m_LevelGenerator?.SetMoveSpeedToMax();
     }
 

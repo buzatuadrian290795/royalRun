@@ -7,6 +7,7 @@ using UnityEditor;
 // Gestioneaza meniul de pauza: pause/resume, setari, iesire din joc
 public class MenuUI : MonoBehaviour
 {
+    public static bool IsOpen { get; private set; }
     [Header("References")]
     [SerializeField] GameObject pauseMenu;
     [SerializeField] SettingsUI settingsUI;
@@ -50,6 +51,7 @@ public class MenuUI : MonoBehaviour
     {
         if (pauseMenu != null) pauseMenu.SetActive(true);
         Time.timeScale = 0f;
+        IsOpen = true;
     }
 
     // Ascunde meniul de pauza si reia timpul
@@ -57,6 +59,7 @@ public class MenuUI : MonoBehaviour
     {
         if (pauseMenu != null) pauseMenu.SetActive(false);
         Time.timeScale = 1f;
+        IsOpen = false;
     }
 
     // Alterna intre pauza si resume in functie de starea curenta

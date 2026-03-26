@@ -1,4 +1,4 @@
-﻿using Unity.Cinemachine;
+using Unity.Cinemachine;
 using UnityEngine;
 
 // Gestioneaza tranzitia intre animatie normala si ragdoll la coliziune, apoi declanseaza respawn

@@ -32,7 +32,8 @@ public class RushVFX : MonoBehaviour
             volume.profile.TryGet(out m_Chromatic);
         }
 
-        SetIntensities(0f, 0f);
+        if (m_Vignette != null) m_Vignette.intensity.value = 0f;
+        if (m_Chromatic != null) m_Chromatic.intensity.value = 0f;
     }
 
     private void Update()
@@ -59,9 +60,4 @@ public class RushVFX : MonoBehaviour
         }
     }
 
-    private void SetIntensities(float vignette, float chromatic)
-    {
-        if (m_Vignette != null) m_Vignette.intensity.value = vignette;
-        if (m_Chromatic != null) m_Chromatic.intensity.value = chromatic;
-    }
 }

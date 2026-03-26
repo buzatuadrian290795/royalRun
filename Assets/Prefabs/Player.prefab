@@ -96,7 +96,11 @@ MonoBehaviour:
   playerView: {fileID: 2886619608994256899}
   meshRenderer: {fileID: 5832533965228353327}
   ragdollController: {fileID: 2313219975931908166}
-  rushHitForce: 15
+  fragmentPrefabs:
+  - {fileID: 100000, guid: 52f3bf47c9c62af4588469ff668b805c, type: 3}
+  fragmentCount: 5
+  fragmentForce: 6
+  fragmentLifetime: 0.4
 --- !u!114 &6990036218672289781
 MonoBehaviour:
   m_ObjectHideFlags: 0

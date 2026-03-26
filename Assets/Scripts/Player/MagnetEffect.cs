@@ -28,9 +28,12 @@ public class MagnetEffect : MonoBehaviour
 
     public void Activate(ChunkConfig config)
     {
-        m_TimeRemaining  = config.magnetDuration;
-        m_AttractSpeed   = config.magnetAttractSpeed;
-        m_AttractRadius  = config.magnetAttractRadius;
+        float magnetMult = UpgradeManager.Instance != null
+            ? UpgradeManager.Instance.GetMultiplier(UpgradeType.MagnetPower)
+            : 1f;
+        m_TimeRemaining  = config.magnetDuration    * magnetMult;
+        m_AttractSpeed   = config.magnetAttractSpeed * magnetMult;
+        m_AttractRadius  = config.magnetAttractRadius * magnetMult;
     }
 
     public void Deactivate()
@@ -51,11 +54,17 @@ public class MagnetEffect : MonoBehaviour
             return;
         }
 
-        Coin[] coins = FindObjectsByType<Coin>(FindObjectsSortMode.None);
+        float radiusSqr = m_AttractRadius * m_AttractRadius;
+        Vector3 myPos   = transform.position;
+        float   step    = m_AttractSpeed * Time.deltaTime;
 
-        foreach (Coin coin in coins)
+        for (int i = Coin.All.Count - 1; i >= 0; i--)
         {
-            if (Vector3.Distance(coin.transform.position, transform.position) > m_AttractRadius) continue;
+            Coin coin = Coin.All[i];
+            if (coin == null) continue;
+
+            Vector3 coinPos = coin.transform.position;
+            if ((coinPos - myPos).sqrMagnitude > radiusSqr) continue;
 
             if (coin.transform.parent != null)
             {
@@ -63,23 +72,18 @@ public class MagnetEffect : MonoBehaviour
                 m_DetachedCoins.Add(coin);
             }
 
-            coin.transform.position = Vector3.MoveTowards(
-                coin.transform.position,
-                transform.position,
-                m_AttractSpeed * Time.deltaTime
-            );
+            coin.transform.position = Vector3.MoveTowards(coinPos, myPos, step);
         }
     }
 
     private void ReattachDetachedCoins()
     {
-        Chunk[] chunks = FindObjectsByType<Chunk>(FindObjectsSortMode.None);
-
-        foreach (Coin coin in m_DetachedCoins)
+        for (int i = 0; i < m_DetachedCoins.Count; i++)
         {
+            Coin coin = m_DetachedCoins[i];
             if (coin == null) continue;
 
-            Transform nearestChunk = FindNearestChunk(chunks, coin.transform.position);
+            Transform nearestChunk = FindNearestChunk(coin.transform.position);
             if (nearestChunk != null)
                 coin.transform.SetParent(nearestChunk);
         }
@@ -87,18 +91,18 @@ public class MagnetEffect : MonoBehaviour
         m_DetachedCoins.Clear();
     }
 
-    private Transform FindNearestChunk(Chunk[] chunks, Vector3 position)
+    private Transform FindNearestChunk(Vector3 position)
     {
         Transform best = null;
         float bestDist = float.MaxValue;
 
-        foreach (Chunk chunk in chunks)
+        for (int i = 0; i < Chunk.All.Count; i++)
         {
-            float dist = Mathf.Abs(chunk.transform.position.z - position.z);
+            float dist = Mathf.Abs(Chunk.All[i].transform.position.z - position.z);
             if (dist < bestDist)
             {
                 bestDist = dist;
-                best = chunk.transform;
+                best = Chunk.All[i].transform;
             }
         }
 

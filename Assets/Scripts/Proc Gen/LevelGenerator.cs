@@ -1,68 +1,77 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Genereaza, muta si distruge chunk-urile de drum; controleaza viteza si dificultatea
+// Genereaza, muta si distruge chunk-urile de drum si cladirile laterale; controleaza viteza si dificultatea
 public class LevelGenerator : MonoBehaviour
 {
+    [Header("Configs")]
+    [SerializeField] ChunkConfig chunkConfig;
+    [SerializeField] BuildingChunkConfig buildingChunkConfig;
+
+    [Header("References")]
     [SerializeField] CameraController cameraController;
     [SerializeField] RoadView roadView;
-    [SerializeField] List<GameObject> chunkPrefabs = new List<GameObject>();
-    [SerializeField] int startingChunksAmount = 12;
     [SerializeField] Transform chunkParent;
-    [SerializeField] float chunkLength = 10f;
+    [SerializeField] Transform buildingParent;
+
+    [Header("Settings")]
+    [SerializeField] int startingChunksAmount = 16;
+    [SerializeField] int maxChunks = 20;
+    [SerializeField] int maxBuildings = 60;
     [SerializeField] float moveSpeed = 8f;
     [SerializeField] float minMoveSpeed = 8f;
     [SerializeField] float maxMoveSpeed = 44f;
     [SerializeField, Range(0f, 1f)] float obstacleDensity = 0.25f;
 
     private List<Chunk> m_Chunks = new List<Chunk>();
+    private List<GameObject> m_Buildings = new List<GameObject>();
+    private List<GameObject> m_GroundStrips = new List<GameObject>();
     private Camera m_MainCamera;
-    private GameObject m_LastSpawnedPrefab;
+    private int m_LastChunkIndex = -1;
+    private int m_LastBuildingIndexLeft = -1;
+    private int m_LastBuildingIndexRight = -1;
+    private float m_LastChunkLength = 16f; // fallback pana la primul chunk spawnat
+    private int   m_CachedCoinMultiplier = 1;
+    private float m_LastSpeedForMultiplier = -1f;
+
+    [Header("Debug")]
+    [SerializeField] private int d_ActiveChunks;
+    [SerializeField] private int d_ActiveBuildings;
+    [SerializeField] private int d_ActiveGroundStrips;
+
+    // Object pools
+    private readonly Dictionary<GameObject, Queue<Chunk>> m_ChunkPool = new Dictionary<GameObject, Queue<Chunk>>();
+    private readonly Dictionary<GameObject, Queue<GameObject>> m_BuildingPool = new Dictionary<GameObject, Queue<GameObject>>();
+    private readonly Dictionary<GameObject, GameObject> m_BuildingToPrefab = new Dictionary<GameObject, GameObject>();
 
     public float MoveSpeed => moveSpeed;
     public float ObstacleDensity => obstacleDensity;
+    public float ChunkLength => m_LastChunkLength;
     public int StartingChunksAmount => startingChunksAmount;
+    public RoadView RoadView => roadView;
+    public float MaxMoveSpeed => maxMoveSpeed;
+    public float[] LanePositions => roadView != null ? roadView.LanePositions : new float[] { -2.5f, 0f, 2.5f };
 
-    public void SetObstacleDensity(float value)
-    {
-        obstacleDensity = Mathf.Clamp01(value);
-    }
-
-    public void SetStartingChunksAmount(int value)
-    {
-        startingChunksAmount = Mathf.Max(1, value);
-    }
-
-    public void RespawnChunks()
-    {
-        for (int i = m_Chunks.Count - 1; i >= 0; i--)
-        {
-            m_Chunks[i].Cleanup();
-            Destroy(m_Chunks[i].gameObject);
-        }
-        m_Chunks.Clear();
-        m_LastSpawnedPrefab = null;
-        SpawnStartingChunks();
-    }
-
-    // Multiplicatorul de monede creste treptat cu viteza + bonus per obstacol lovit in Rush
     public int CoinMultiplier
     {
         get
         {
-            int speedMultiplier;
-            if (moveSpeed >= 44f) speedMultiplier = 10;
-            else if (moveSpeed >= 40f) speedMultiplier = 9;
-            else if (moveSpeed >= 36f) speedMultiplier = 8;
-            else if (moveSpeed >= 32f) speedMultiplier = 7;
-            else if (moveSpeed >= 28f) speedMultiplier = 6;
-            else if (moveSpeed >= 24f) speedMultiplier = 5;
-            else if (moveSpeed >= 20f) speedMultiplier = 4;
-            else if (moveSpeed >= 16f) speedMultiplier = 3;
-            else if (moveSpeed >= 12f) speedMultiplier = 2;
-            else speedMultiplier = 1;
-
-            return speedMultiplier + RushEffect.ObstacleHitBonus;
+            // Recalculeaza doar cand moveSpeed s-a schimbat
+            if (moveSpeed != m_LastSpeedForMultiplier)
+            {
+                m_LastSpeedForMultiplier = moveSpeed;
+                if      (moveSpeed >= 44f) m_CachedCoinMultiplier = 10;
+                else if (moveSpeed >= 40f) m_CachedCoinMultiplier = 9;
+                else if (moveSpeed >= 36f) m_CachedCoinMultiplier = 8;
+                else if (moveSpeed >= 32f) m_CachedCoinMultiplier = 7;
+                else if (moveSpeed >= 28f) m_CachedCoinMultiplier = 6;
+                else if (moveSpeed >= 24f) m_CachedCoinMultiplier = 5;
+                else if (moveSpeed >= 20f) m_CachedCoinMultiplier = 4;
+                else if (moveSpeed >= 16f) m_CachedCoinMultiplier = 3;
+                else if (moveSpeed >= 12f) m_CachedCoinMultiplier = 2;
+                else                       m_CachedCoinMultiplier = 1;
+            }
+            return m_CachedCoinMultiplier + RushEffect.ObstacleHitBonus;
         }
     }
 
@@ -70,28 +79,28 @@ public class LevelGenerator : MonoBehaviour
     {
         m_MainCamera = Camera.main;
         if (roadView == null) roadView = FindFirstObjectByType<RoadView>();
-    }
-
-    void Start()
-    {
+        SpawnLeadChunk();
         SpawnStartingChunks();
     }
 
     private void FixedUpdate()
     {
         MoveChunks();
+        d_ActiveChunks = m_Chunks.Count;
+        d_ActiveBuildings = m_Buildings.Count;
+        d_ActiveGroundStrips = m_GroundStrips.Count;
+        MoveBuildings();
+        MoveGroundStrips();
     }
 
-    // Mareste viteza (apelat de Apple) si notifica camera sa ajusteze FOV
+    public void SetObstacleDensity(float value) => obstacleDensity = Mathf.Clamp01(value);
+    public void SetStartingChunksAmount(int value) => startingChunksAmount = Mathf.Max(1, value);
+
     public void ChangeChunkMoveSpeed(float speedAmount)
     {
         moveSpeed = Mathf.Min(moveSpeed + speedAmount, maxMoveSpeed);
         cameraController?.ChangeCameraFOV(speedAmount);
     }
-
-    public float MaxMoveSpeed => maxMoveSpeed;
-    public RoadView RoadView => roadView;
-    public float[] LanePositions => roadView != null ? roadView.LanePositions : new float[] { -2.5f, 0f, 2.5f };
 
     public void SetMoveSpeedToMax()
     {
@@ -105,85 +114,349 @@ public class LevelGenerator : MonoBehaviour
         cameraController?.ResetFOV();
     }
 
-    // Reseteaza viteza la minim (apelat la moartea jucatorului)
     public void ResetMoveSpeed()
     {
         moveSpeed = minMoveSpeed;
         cameraController?.ResetFOV();
     }
 
+    public void RespawnChunks()
+    {
+        foreach (var chunk in m_Chunks) ReturnChunkToPool(chunk);
+        m_Chunks.Clear();
+        m_LastChunkIndex = -1;
+
+        foreach (var building in m_Buildings) { if (building != null) ReturnBuildingToPool(building); }
+        m_Buildings.Clear();
+        m_LastBuildingIndexLeft = -1;
+        m_LastBuildingIndexRight = -1;
+
+        foreach (var strip in m_GroundStrips) { if (strip != null) ReturnBuildingToPool(strip); }
+        m_GroundStrips.Clear();
+
+        SpawnStartingChunks();
+    }
+
+    // --- Chunks ---
+
+    // Spawneaza un chunk inainte de toate celelalte, lipit in spatele pozitiei de start
+    private void SpawnLeadChunk()
+    {
+        if (chunkConfig == null || chunkConfig.chunkPrefabs == null || chunkConfig.chunkPrefabs.Length == 0) return;
+
+        int index = PickRandom(chunkConfig.chunkPrefabs.Length, ref m_LastChunkIndex);
+        GameObject prefab = chunkConfig.chunkPrefabs[index];
+        if (prefab == null) return;
+
+        Chunk chunk = GetChunkFromPool(prefab);
+
+        float spawnZ = transform.position.z - chunk.LocalMaxZ;
+        chunk.transform.position = new Vector3(transform.position.x, transform.position.y, spawnZ);
+        chunk.gameObject.SetActive(true);
+        chunk.Initialize(this, chunkConfig, obstacleDensity);
+        m_Chunks.Add(chunk);
+        m_LastChunkLength = chunk.Length;
+
+        SpawnBuildingPair(spawnZ);
+        SpawnGroundStrip(spawnZ);
+    }
+
     private void SpawnStartingChunks()
     {
-        for (int i = 0; i < startingChunksAmount; i++)
-            SpawnChunk();
+        float spawnThreshold = m_MainCamera.transform.position.z + m_MainCamera.farClipPlane;
+
+        do { SpawnChunk(); }
+        while (m_Chunks.Count < Mathf.Min(startingChunksAmount, maxChunks) ||
+               (m_Chunks.Count < maxChunks &&
+                m_Chunks[m_Chunks.Count - 1].transform.position.z + m_Chunks[m_Chunks.Count - 1].LocalMaxZ < spawnThreshold));
     }
 
     private void SpawnChunk()
     {
-        if (chunkPrefabs == null || chunkPrefabs.Count == 0)
+        if (chunkConfig == null || chunkConfig.chunkPrefabs == null || chunkConfig.chunkPrefabs.Length == 0)
         {
-            Debug.LogError("LevelGenerator: chunkPrefabs list is empty.");
+            Debug.LogError("LevelGenerator: ChunkConfig nu are chunkPrefabs.");
             return;
         }
 
-        Vector3 spawnPos = new Vector3(
-            transform.position.x,
-            transform.position.y,
-            CalculateSpawnPositionZ()
-        );
+        int index = PickRandom(chunkConfig.chunkPrefabs.Length, ref m_LastChunkIndex);
+        GameObject prefab = chunkConfig.chunkPrefabs[index];
+        if (prefab == null) { Debug.LogError($"LevelGenerator: chunkPrefab null la index {index}."); return; }
 
-        GameObject prefab = PickRandomPrefab();
-        m_LastSpawnedPrefab = prefab;
+        Chunk chunk = GetChunkFromPool(prefab);
 
-        Chunk chunkScript = Instantiate(prefab, spawnPos, Quaternion.identity, chunkParent)
-                                .GetComponent<Chunk>();
+        float spawnZ = CalculateSpawnPositionZ(chunk);
+        chunk.transform.position = new Vector3(transform.position.x, transform.position.y, spawnZ);
+        chunk.gameObject.SetActive(true);
+        chunk.Initialize(this, chunkConfig, obstacleDensity);
+        m_Chunks.Add(chunk);
+        m_LastChunkLength = chunk.Length;
 
-        chunkScript.SetObstacleDensity(obstacleDensity);
-        chunkScript.Init(this);
-        chunkScript.Initialize();
-
-        m_Chunks.Add(chunkScript);
-    }
-
-    // Alege un prefab random diferit de cel anterior (daca exista mai mult de unul)
-    private GameObject PickRandomPrefab()
-    {
-        if (chunkPrefabs.Count == 1) return chunkPrefabs[0];
-
-        GameObject picked;
-        do
-        {
-            picked = chunkPrefabs[Random.Range(0, chunkPrefabs.Count)];
-        }
-        while (picked == m_LastSpawnedPrefab);
-
-        return picked;
-    }
-
-    // Spawn-ul urmatorului chunk incepe imediat dupa ultimul din lista
-    private float CalculateSpawnPositionZ()
-    {
-        if (m_Chunks.Count == 0) return transform.position.z;
-        return m_Chunks[m_Chunks.Count - 1].transform.position.z + chunkLength;
+        SpawnBuildingPair(spawnZ);
+        SpawnGroundStrip(spawnZ);
     }
 
     private void MoveChunks()
     {
         float cameraZ = m_MainCamera.transform.position.z;
+        bool needsRefill = false;
 
         for (int i = m_Chunks.Count - 1; i >= 0; i--)
         {
             Chunk chunk = m_Chunks[i];
             chunk.transform.position += Vector3.back * (moveSpeed * Time.deltaTime);
 
-            // Chunk-ul a trecut de camera -> curata-l, distruge-l si spawneaza unul nou
-            if (chunk.transform.position.z <= cameraZ - chunkLength)
+            if (chunk.transform.position.z <= cameraZ - chunk.Length)
             {
                 m_Chunks.RemoveAt(i);
-                chunk.Cleanup();
-                Destroy(chunk.gameObject);
-                SpawnChunk();
+                ReturnChunkToPool(chunk);
+                needsRefill = true;
             }
         }
+
+        // Spawneaza doar cand un chunk a fost scos, pana lantul depaseste far clip plane sau limita maxima
+        if (needsRefill)
+        {
+            float spawnThreshold = cameraZ + m_MainCamera.farClipPlane;
+            while (m_Chunks.Count < maxChunks &&
+                   (m_Chunks.Count == 0 ||
+                    m_Chunks[m_Chunks.Count - 1].transform.position.z + m_Chunks[m_Chunks.Count - 1].LocalMaxZ < spawnThreshold))
+                SpawnChunk();
+        }
+    }
+
+    // Calculeaza Z-ul pivot-ului noului chunk astfel incat mesh-ul sau sa inceapa exact
+    // acolo unde se termina mesh-ul ultimului chunk existent
+    private float CalculateSpawnPositionZ(Chunk newChunk)
+    {
+        if (m_Chunks.Count == 0)
+            return transform.position.z - newChunk.LocalMinZ;
+
+        Chunk last = m_Chunks[m_Chunks.Count - 1];
+        float lastWorldEndZ = last.transform.position.z + last.LocalMaxZ;
+        return lastWorldEndZ - newChunk.LocalMinZ;
+    }
+
+    // --- Buildings ---
+
+    private void SpawnBuildingPair(float z)
+    {
+        if (m_Buildings.Count >= maxBuildings) return;
+
+        if (buildingChunkConfig == null)
+        {
+            Debug.LogWarning("LevelGenerator: BuildingChunkConfig nu este asignat.");
+            return;
+        }
+        if (buildingChunkConfig.buildingPrefabs == null || buildingChunkConfig.buildingPrefabs.Length == 0)
+        {
+            Debug.LogWarning("LevelGenerator: BuildingChunkConfig.buildingPrefabs este gol.");
+            return;
+        }
+
+        int leftIndex = PickRandom(buildingChunkConfig.buildingPrefabs.Length, ref m_LastBuildingIndexLeft);
+        int rightIndex = PickRandom(buildingChunkConfig.buildingPrefabs.Length, ref m_LastBuildingIndexRight);
+
+        // Garantam ca stanga si dreapta sunt prefab-uri diferite
+        if (buildingChunkConfig.buildingPrefabs.Length > 1 && rightIndex == leftIndex)
+            rightIndex = (rightIndex + 1) % buildingChunkConfig.buildingPrefabs.Length;
+
+        SpawnBuilding(buildingChunkConfig.leftX, buildingChunkConfig.leftYRotation, z, buildingChunkConfig.buildingPrefabs[leftIndex]);
+        SpawnBuilding(buildingChunkConfig.rightX, buildingChunkConfig.rightYRotation, z, buildingChunkConfig.buildingPrefabs[rightIndex]);
+
+        SpawnFillers(z);
+    }
+
+    private void SpawnFillers(float z)
+    {
+        if (buildingChunkConfig.fillerPrefabs == null || buildingChunkConfig.fillerPrefabs.Length == 0) return;
+
+        for (int i = 0; i < buildingChunkConfig.fillerCountPerChunk; i++)
+        {
+            float fillerZ = z + Random.Range(0f, m_LastChunkLength);
+            GameObject prefab = buildingChunkConfig.fillerPrefabs[Random.Range(0, buildingChunkConfig.fillerPrefabs.Length)];
+            if (prefab == null) continue;
+
+            float randomRotY = Random.Range(0f, 360f);
+
+            GameObject left = GetBuildingFromPool(
+                prefab,
+                new Vector3(buildingChunkConfig.leftX, buildingChunkConfig.fillerY, fillerZ),
+                Quaternion.Euler(0f, randomRotY, 0f));
+            m_Buildings.Add(left);
+
+            GameObject right = GetBuildingFromPool(
+                prefab,
+                new Vector3(buildingChunkConfig.rightX, buildingChunkConfig.fillerY, fillerZ),
+                Quaternion.Euler(0f, randomRotY, 0f));
+            m_Buildings.Add(right);
+        }
+    }
+
+    // Spawneaza o fasie verde plata de-o parte si de alta a drumului, scalata pe lungimea chunk-ului
+    private void SpawnGroundStrip(float z)
+    {
+        if (buildingChunkConfig == null || buildingChunkConfig.groundStripPrefab == null) return;
+
+        float cx = buildingChunkConfig.groundStripCenterX;
+        float width = buildingChunkConfig.groundStripWidth;
+        float centerZ = z + m_LastChunkLength * 0.5f;
+
+        GameObject left = GetBuildingFromPool(
+            buildingChunkConfig.groundStripPrefab,
+            new Vector3(-cx, 0f, centerZ),
+            Quaternion.identity);
+        left.transform.localScale = new Vector3(width, 0.1f, m_LastChunkLength);
+        m_GroundStrips.Add(left);
+
+        GameObject right = GetBuildingFromPool(
+            buildingChunkConfig.groundStripPrefab,
+            new Vector3(cx, 0f, centerZ),
+            Quaternion.identity);
+        right.transform.localScale = new Vector3(width, 0.1f, m_LastChunkLength);
+        m_GroundStrips.Add(right);
+    }
+
+    private void SpawnBuilding(float x, float yRotation, float z, GameObject prefab)
+    {
+        if (prefab == null)
+        {
+            Debug.LogWarning("LevelGenerator: buildingPrefab este null.");
+            return;
+        }
+
+        GameObject obj = GetBuildingFromPool(
+            prefab,
+            new Vector3(x, buildingChunkConfig.buildingY, z),
+            Quaternion.Euler(0f, yRotation, 0f));
+
+        m_Buildings.Add(obj);
+    }
+
+    private void MoveBuildings()
+    {
+        float cameraZ = m_MainCamera.transform.position.z;
+
+        for (int i = m_Buildings.Count - 1; i >= 0; i--)
+        {
+            GameObject building = m_Buildings[i];
+            if (building == null) { m_Buildings.RemoveAt(i); continue; }
+
+            building.transform.position += Vector3.back * (moveSpeed * Time.deltaTime);
+
+            if (building.transform.position.z <= cameraZ - m_LastChunkLength)
+            {
+                m_Buildings.RemoveAt(i);
+                ReturnBuildingToPool(building);
+            }
+        }
+    }
+
+    private void MoveGroundStrips()
+    {
+        float cameraZ = m_MainCamera.transform.position.z;
+
+        for (int i = m_GroundStrips.Count - 1; i >= 0; i--)
+        {
+            GameObject strip = m_GroundStrips[i];
+            if (strip == null) { m_GroundStrips.RemoveAt(i); continue; }
+
+            strip.transform.position += Vector3.back * (moveSpeed * Time.deltaTime);
+
+            if (strip.transform.position.z <= cameraZ - m_LastChunkLength)
+            {
+                m_GroundStrips.RemoveAt(i);
+                ReturnBuildingToPool(strip);
+            }
+        }
+    }
+
+    // --- Object Pools ---
+
+    private Chunk GetChunkFromPool(GameObject prefab)
+    {
+        if (!m_ChunkPool.TryGetValue(prefab, out Queue<Chunk> pool))
+        {
+            pool = new Queue<Chunk>();
+            m_ChunkPool[prefab] = pool;
+        }
+
+        if (pool.Count > 0)
+            return pool.Dequeue();
+
+        // Prima instantiere: la origin ca Awake sa calculeze bounds corect
+        GameObject chunkGO = Instantiate(prefab, Vector3.zero, Quaternion.identity, chunkParent);
+        Chunk chunk = chunkGO.GetComponent<Chunk>() ?? chunkGO.AddComponent<Chunk>();
+        chunk.SourcePrefab = prefab;
+        chunkGO.SetActive(false); // dezactiveaza imediat dupa ce Awake a rulat
+        return chunk;
+    }
+
+    private void ReturnChunkToPool(Chunk chunk)
+    {
+        chunk.Cleanup();
+        chunk.gameObject.SetActive(false);
+
+        if (!m_ChunkPool.TryGetValue(chunk.SourcePrefab, out Queue<Chunk> pool))
+        {
+            pool = new Queue<Chunk>();
+            m_ChunkPool[chunk.SourcePrefab] = pool;
+        }
+
+        pool.Enqueue(chunk);
+    }
+
+    private GameObject GetBuildingFromPool(GameObject prefab, Vector3 position, Quaternion rotation)
+    {
+        if (!m_BuildingPool.TryGetValue(prefab, out Queue<GameObject> pool))
+        {
+            pool = new Queue<GameObject>();
+            m_BuildingPool[prefab] = pool;
+        }
+
+        if (pool.Count > 0)
+        {
+            GameObject pooled = pool.Dequeue();
+            pooled.transform.SetPositionAndRotation(position, rotation);
+            pooled.SetActive(true);
+            return pooled;
+        }
+
+        GameObject obj = Instantiate(prefab, position, rotation, buildingParent);
+        m_BuildingToPrefab[obj] = prefab;
+        return obj;
+    }
+
+    private void ReturnBuildingToPool(GameObject building)
+    {
+        building.SetActive(false);
+
+        if (m_BuildingToPrefab.TryGetValue(building, out GameObject prefab))
+        {
+            if (!m_BuildingPool.TryGetValue(prefab, out Queue<GameObject> pool))
+            {
+                pool = new Queue<GameObject>();
+                m_BuildingPool[prefab] = pool;
+            }
+            pool.Enqueue(building);
+        }
+        else
+        {
+            Destroy(building);
+        }
+    }
+
+    // --- Helpers ---
+
+    private int PickRandom(int count, ref int lastIndex)
+    {
+        if (count == 1) return 0;
+
+        int picked;
+        do { picked = Random.Range(0, count); }
+        while (picked == lastIndex);
+
+        lastIndex = picked;
+        return picked;
     }
 }

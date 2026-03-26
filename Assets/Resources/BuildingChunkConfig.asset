@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a583ac4791c7c9d4c836ab5017765c64, type: 3}
+  m_Name: BuildingChunkConfig
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingChunkConfig
+  buildingPrefabs:
+  - {fileID: 100000, guid: 3e775e81f9d03d2479562071ec3d85ec, type: 3}
+  - {fileID: 100000, guid: 73722d96c4a048646886d6c8dfe3e6d7, type: 3}
+  - {fileID: 100000, guid: 00fb4c302dcc9ed41b833bcc293fcf92, type: 3}
+  - {fileID: 100000, guid: d17bfd5ab0358da4298166cb2419a676, type: 3}
+  - {fileID: 100000, guid: 39df401245ad90441ae705eb44abf921, type: 3}
+  - {fileID: 100000, guid: 600361046ea120649bf184a479e5a633, type: 3}
+  - {fileID: 100000, guid: c4a86a895a47add4796e02bd592eaadb, type: 3}
+  - {fileID: 100000, guid: 75b2d9ab120594640bde432ca7e76fa0, type: 3}
+  - {fileID: 100000, guid: 0e21147da509cd944a8e67793bbd3a06, type: 3}
+  - {fileID: 100000, guid: 465d87bbc8301204a942b7da6c23b9c6, type: 3}
+  - {fileID: 100000, guid: 72d62c64add9db64b89f1c0a91396ca1, type: 3}
+  - {fileID: 100000, guid: 6297492ded39f59479be781d7c24afe9, type: 3}
+  - {fileID: 100000, guid: 7c882be15d1ed15449592aad93115205, type: 3}
+  - {fileID: 100000, guid: 26e5a7c5213215f4f853aca6d71d9955, type: 3}
+  - {fileID: 100000, guid: bb0f6de665bfe7b4da079ab9d7927f74, type: 3}
+  - {fileID: 100000, guid: 86df5e41217aeff4ebf769c62404d566, type: 3}
+  - {fileID: 100000, guid: 600361046ea120649bf184a479e5a633, type: 3}
+  - {fileID: 100000, guid: f9810621ef5c685429dc87cf880c12a0, type: 3}
+  - {fileID: 100000, guid: 5a32b298aff263b44bf9ddcf0a6a334f, type: 3}
+  - {fileID: 100000, guid: 0b103d7947a51c14cbedaf942011b7c0, type: 3}
+  - {fileID: 100000, guid: 79d9a0c9ea52b814e811b163a5be9431, type: 3}
+  - {fileID: 100000, guid: ae54a86a87d03534ea0ba0fcca81e6ac, type: 3}
+  - {fileID: 100000, guid: 28f08dccc9cc3324b9c6327e1c6c1083, type: 3}
+  - {fileID: 100000, guid: 99645fe7b2d8e604788d44d38e048e37, type: 3}
+  - {fileID: 100000, guid: 1e4981aca3736304f84d22fab3888c8e, type: 3}
+  - {fileID: 100000, guid: 069f4c9962479c24599ed92b0acde8d2, type: 3}
+  - {fileID: 100000, guid: 785b76e4477b5004886bf73b140c0d1c, type: 3}
+  - {fileID: 100000, guid: 96a2ddbcacd3fd542bebd52cd55a22b7, type: 3}
+  - {fileID: 100000, guid: 67df54f5d41c2c042b99320d2c542b28, type: 3}
+  - {fileID: 100000, guid: 1098212bb84277e42a5e8aa2e249f02c, type: 3}
+  - {fileID: 100000, guid: 8873027456f406044abf5d317fb6e6c7, type: 3}
+  - {fileID: 100000, guid: e96076fc6de82fe49bb6811138285d21, type: 3}
+  - {fileID: 100000, guid: 4d4a9628dcda02843b95dd2fc657506a, type: 3}
+  - {fileID: 100000, guid: 4538dd0b03c2d6040849a7fd74463136, type: 3}
+  - {fileID: 100000, guid: ab387249fd980b14b8ac099cf2e79cd3, type: 3}
+  - {fileID: 100000, guid: 2d4d0df70165a614d804ce2abc776218, type: 3}
+  - {fileID: 100000, guid: 8fa6f71093d7f4b4cb6bae0b7a282362, type: 3}
+  - {fileID: 100000, guid: 39df401245ad90441ae705eb44abf921, type: 3}
+  - {fileID: 100000, guid: 644b0c4f277535448b12e409a1c2ce41, type: 3}
+  - {fileID: 100000, guid: 3e775e81f9d03d2479562071ec3d85ec, type: 3}
+  - {fileID: 100000, guid: 73722d96c4a048646886d6c8dfe3e6d7, type: 3}
+  - {fileID: 100000, guid: 00fb4c302dcc9ed41b833bcc293fcf92, type: 3}
+  - {fileID: 100000, guid: d17bfd5ab0358da4298166cb2419a676, type: 3}
+  leftX: -13.5
+  rightX: 13.5
+  buildingY: 0
+  leftYRotation: 90
+  rightYRotation: -90
+  fillerPrefabs: []
+  fillerCountPerChunk: 4
+  fillerY: 0
+  groundStripPrefab: {fileID: 100000, guid: b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8, type: 3}
+  groundStripCenterX: 8
+  groundStripWidth: 9

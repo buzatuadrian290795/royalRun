@@ -145,8 +145,8 @@ public class SettingsUI : MonoBehaviour
     {
         if (m_IsLoading) return;
         AudioManager.Instance?.PlayUI();
-        // Dropdown-ul are 4 optiuni fixe: index 0=30fps, 1=60fps, 2=120fps, 3=MAX(-1)
-        int[] options = { 30, 60, 120, -1 };
+        // Dropdown-ul are 3 optiuni fixe: index 0=30fps, 1=60fps, 2=120fps
+        int[] options = { 30, 60, 120 };
         SettingsManager.Instance?.SetTargetFPS(options[v]);
     }
 
@@ -226,10 +226,10 @@ public class SettingsUI : MonoBehaviour
 
         if (m_FpsDropdown != null)
         {
-            // Gaseste indexul din dropdown care corespunde FPS-ului salvat (default: index 1 = 60fps)
-            int[] fpsOptions = { 30, 60, 120, -1 };
+            // Gaseste indexul din dropdown care corespunde FPS-ului salvat (default: index 2 = 120fps)
+            int[] fpsOptions = { 30, 60, 120 };
             int fpsIndex = System.Array.IndexOf(fpsOptions, s.TargetFPS);
-            m_FpsDropdown.SetValueWithoutNotify(fpsIndex >= 0 ? fpsIndex : 1);
+            m_FpsDropdown.SetValueWithoutNotify(fpsIndex >= 0 ? fpsIndex : 2);
         }
 
         m_IsLoading = false; // Deblocheaza callback-urile

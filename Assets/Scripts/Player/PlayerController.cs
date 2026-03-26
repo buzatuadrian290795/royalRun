@@ -109,8 +109,10 @@ public class PlayerController : IDisposable
 
         // X mereu inghetat — mutat doar prin m_Rigidbody.position (bypass physics)
         // Y inghetat implicit, deblocat doar in Jump/Roll
+        // Z mereu inghetat — jucatorul nu se misca pe Z, doar chunk-urile
         SetXFrozen(true);
         SetYFrozen(true);
+        m_Rigidbody.constraints |= RigidbodyConstraints.FreezePositionZ;
 
         Init();
     }
@@ -526,24 +528,4 @@ public class PlayerController : IDisposable
             m_Rigidbody.constraints &= ~RigidbodyConstraints.FreezePositionX;
     }
 
-    // Utilitare: deplaseaza rigidbody doar pe o singura axa
-    private void MoveX(float x) =>
-        m_Rigidbody.MovePosition(new Vector3(x, m_Rigidbody.position.y, m_Rigidbody.position.z));
-
-    private void MoveY(float y) =>
-        m_Rigidbody.MovePosition(new Vector3(m_Rigidbody.position.x, y, m_Rigidbody.position.z));
-
-    // Interpoleaza Y simplu (fara schimb de banda) - folosit in alte contexte
-    private async Awaitable LerpYAsync(float from, float to, float duration)
-    {
-        float elapsed = 0f;
-        float invDuration = 1f / duration;
-
-        while (elapsed < duration && !m_PlayerView.destroyCancellationToken.IsCancellationRequested)
-        {
-            MoveY(Mathf.Lerp(from, to, elapsed * invDuration));
-            await Awaitable.NextFrameAsync();
-            elapsed += Time.deltaTime;
-        }
-    }
 }
