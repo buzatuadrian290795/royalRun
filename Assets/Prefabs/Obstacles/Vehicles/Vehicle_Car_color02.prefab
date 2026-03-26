@@ -43,8 +43,8 @@ GameObject:
   - component: {fileID: 5219966026044908373}
   - component: {fileID: 6342892758697327449}
   - component: {fileID: 5969334934743470079}
-  - component: {fileID: 7126813344934234360}
-  - component: {fileID: 8315142439996444578}
+  - component: {fileID: 3197581479851085691}
+  - component: {fileID: 1948154833450950349}
   m_Layer: 9
   m_Name: Vehicle_Car_color02
   m_TagString: Obstacle
@@ -110,7 +110,25 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.5465477, y: 2.1969917, z: 3.1611753}
   m_Center: {x: 0, y: 1.09959, z: -0.6297478}
---- !u!54 &7126813344934234360
+--- !u!114 &3197581479851085691
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7827495774461422248}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98dc5e8c23409cf41966caffc65256e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleBreakable
+  force: 8
+  upwardForce: 10
+  torque: 4
+  maxLifetime: 5
+  breakVFXPrefab: {fileID: 1000000001, guid: f1e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6, type: 3}
+  vfxLeadTime: 0.3
+--- !u!54 &1948154833450950349
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -137,18 +155,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &8315142439996444578
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7827495774461422248}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06f470e7ca0f2e34589dd18f9f5bbaf5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DetachedObstacle
 --- !u!1001 &5568108156798880919
 PrefabInstance:
   m_ObjectHideFlags: 0

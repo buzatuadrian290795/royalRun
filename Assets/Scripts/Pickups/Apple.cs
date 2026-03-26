@@ -11,6 +11,9 @@ public class Apple : Pickup
     {
         VibrationManager.Instance.Vibrate(50);                              // Vibreaza 50ms
         AudioManager.Instance.PlayApple();                                  // Reda sunetul marului
-        m_LevelGenerator?.ChangeChunkMoveSpeed(adjustChangeMoveSpeedAmount); // Creste viteza (daca LevelGenerator exista)
+        float appleMultiplier = UpgradeManager.Instance != null
+            ? UpgradeManager.Instance.GetMultiplier(UpgradeType.AppleSpeed)
+            : 1f;
+        m_LevelGenerator?.ChangeChunkMoveSpeed(adjustChangeMoveSpeedAmount * appleMultiplier);
     }
 }

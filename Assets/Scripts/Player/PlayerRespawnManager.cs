@@ -7,7 +7,6 @@ public class PlayerRespawnManager : MonoBehaviour
     [SerializeField] private Transform spawnPoint;
     [SerializeField] private EntryPoint entryPoint;
     [SerializeField] private LevelGenerator levelGenerator;
-    [SerializeField] private DistanceMeterUI distanceMeterUI;
 
     public GameObject CurrentPlayer { get; private set; }
 

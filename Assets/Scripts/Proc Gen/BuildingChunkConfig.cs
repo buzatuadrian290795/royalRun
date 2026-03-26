@@ -17,4 +17,11 @@ public class BuildingChunkConfig : ScriptableObject
     public GameObject[] fillerPrefabs;
     public int fillerCountPerChunk = 4;
     public float fillerY = 0f;
+
+    [Header("Teren verde (intre drum si cladiri)")]
+    public GameObject groundStripPrefab;
+    // Distanta pe X de la centru la mijlocul fasiei (intre marginea drumului si cladire)
+    public float groundStripCenterX = 8f;
+    // Latimea fasiei verzi (de ajustat vizual in functie de drum si cladiri)
+    public float groundStripWidth = 9f;
 }

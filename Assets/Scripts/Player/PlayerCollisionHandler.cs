@@ -6,9 +6,6 @@ public class PlayerCollisionHandler : MonoBehaviour
     [SerializeField] private PlayerView playerView;
     [SerializeField] private Renderer meshRenderer;
     [SerializeField] private RagdollController ragdollController;
-    [SerializeField] private float rushHitForce = 5f;
-    [SerializeField] private float rushHitForceY = 0f;
-    [SerializeField] private float rushHitForceZ = 0f;
     private MagnetEffect magnetEffect;
     private CameraController cameraController;
 
@@ -64,20 +61,8 @@ public class PlayerCollisionHandler : MonoBehaviour
         {
             if (RushEffect.Instance != null && RushEffect.Instance.IsActive)
             {
-                GameObject obstacle = collision.gameObject;
-                obstacle.transform.SetParent(null);
-
-                Rigidbody rb = obstacle.GetComponent<Rigidbody>();
-                rb.isKinematic = false;
-                rb.useGravity = true;
-
-                Vector3 dir = (obstacle.transform.position - transform.position).normalized;
-                dir.y = Mathf.Abs(dir.y) + 0.3f;
-                rb.AddForce(dir * rushHitForce + new Vector3(0f, rushHitForceY, -rushHitForceZ), ForceMode.Impulse);
-                rb.AddTorque(Random.insideUnitSphere * rushHitForce, ForceMode.Impulse);
-
-                DetachedObstacle detached = obstacle.GetComponent<DetachedObstacle>();
-                detached.enabled = true;
+                Vector3 hitDir = (collision.transform.position - transform.position).normalized;
+                collision.gameObject.GetComponent<ObstacleBreakable>()?.Break(hitDir);
                 RushEffect.AddObstacleHit();
                 cameraController?.Shake();
                 return;

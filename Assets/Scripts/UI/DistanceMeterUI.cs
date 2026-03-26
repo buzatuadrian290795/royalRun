@@ -1,4 +1,3 @@
-using System.Globalization;
 using TMPro;
 using UnityEngine;
 
@@ -51,8 +50,16 @@ public class DistanceMeterUI : MonoBehaviour
         {
             lastMeters = meters;
             distanceText.text = FormatDistance(meters);
-            PlayerPrefs.SetFloat(DistanceKey, distanceTravelled);
         }
+    }
+
+    private void OnApplicationQuit()                             => SaveDistance();
+    private void OnApplicationPause(bool paused) { if (paused) SaveDistance(); }
+
+    private void SaveDistance()
+    {
+        PlayerPrefs.SetFloat(DistanceKey, distanceTravelled);
+        PlayerPrefs.Save();
     }
 
     // Returneaza true daca jucatorul e mort (ragdoll activ) sau inexistent
@@ -86,12 +93,8 @@ public class DistanceMeterUI : MonoBehaviour
     // Formateaza distanta cu unitati adaptive: m / km / Mm
     private string FormatDistance(long meters)
     {
-        if (meters >= 1_000_000)
-            return (meters / 1_000_000f).ToString("F2") + " Mm";
-        if (meters >= 1_000)
-            return (meters / 1_000f).ToString("F2") + " km";
-
-        // Separator de mii cu spatiu (ex: "1 234 m")
-        return meters.ToString("N0", CultureInfo.InvariantCulture).Replace(",", " ") + " m";
+        if (meters >= 1_000_000) return (meters / 1_000_000f).ToString("F2") + " Mm";
+        if (meters >= 1_000)     return (meters / 1_000f).ToString("F2") + " km";
+        return meters + " m";
     }
 }

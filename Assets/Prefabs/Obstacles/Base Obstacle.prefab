@@ -132,8 +132,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5219966026044908373}
   - component: {fileID: 6342892758697327449}
-  - component: {fileID: 7126813344934234360}
-  - component: {fileID: 8315142439996444578}
+  - component: {fileID: -3980773573125740878}
   m_Layer: 9
   m_Name: Base Obstacle
   m_TagString: Obstacle
@@ -178,34 +177,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!54 &7126813344934234360
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7827495774461422248}
-  serializedVersion: 5
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
---- !u!114 &8315142439996444578
+--- !u!114 &-3980773573125740878
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -214,8 +186,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 7827495774461422248}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06f470e7ca0f2e34589dd18f9f5bbaf5, type: 3}
+  m_Script: {fileID: 11500000, guid: 98dc5e8c23409cf41966caffc65256e2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DetachedObstacle
-  sleepVelocityThreshold: 0.05
-  maxDetachedTime: 5
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleBreakable
+  force: 8
+  upwardForce: 6
+  torque: 4
+  maxLifetime: 5
+  breakVFXPrefab: {fileID: 100100000, guid: f1e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6, type: 3}
+  vfxLeadTime: 0.3

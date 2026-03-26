@@ -79,12 +79,6 @@ public class Chunk : MonoBehaviour
         m_SpawnedObjects.Clear();
     }
 
-    public void SetObstacleSpawnRange(int min, int max)
-    {
-        minObstaclesToSpawn = Mathf.Max(0, min);
-        maxObstaclesToSpawn = Mathf.Max(minObstaclesToSpawn, max);
-    }
-
     private void SpawnObject(GameObject prefab, float x, float y, float z)
     {
         if (prefab == null) return;

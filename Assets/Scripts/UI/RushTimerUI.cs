@@ -9,14 +9,23 @@ public class RushTimerUI : MonoBehaviour
 
     private bool m_PanelActive = false;
     private float m_LastDisplayedTime = -1f;
+    private bool m_Suppressed = false;
+
+    public void SetSuppressed(bool suppressed)
+    {
+        m_Suppressed = suppressed;
+        if (suppressed && panel != null) panel.SetActive(false);
+    }
 
     private void Awake()
     {
         if (timerText == null) Debug.LogError("RushTimerUI: timerText not set.");
+        if (panel != null) panel.SetActive(false);
     }
 
     private void Update()
     {
+        if (m_Suppressed) return;
         bool isActive = RushEffect.Instance != null && RushEffect.Instance.IsActive;
 
         if (isActive != m_PanelActive)
@@ -33,6 +42,6 @@ public class RushTimerUI : MonoBehaviour
 
         if (rounded == m_LastDisplayedTime) return;
         m_LastDisplayedTime = rounded;
-        timerText.text = "Rush " + rounded.ToString("F1") + "s";
+        timerText.text = $"Rush {rounded:F1}s";
     }
 }

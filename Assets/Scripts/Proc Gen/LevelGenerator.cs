@@ -16,6 +16,8 @@ public class LevelGenerator : MonoBehaviour
 
     [Header("Settings")]
     [SerializeField] int startingChunksAmount = 16;
+    [SerializeField] int maxChunks = 20;
+    [SerializeField] int maxBuildings = 60;
     [SerializeField] float moveSpeed = 8f;
     [SerializeField] float minMoveSpeed = 8f;
     [SerializeField] float maxMoveSpeed = 44f;
@@ -23,11 +25,19 @@ public class LevelGenerator : MonoBehaviour
 
     private List<Chunk> m_Chunks = new List<Chunk>();
     private List<GameObject> m_Buildings = new List<GameObject>();
+    private List<GameObject> m_GroundStrips = new List<GameObject>();
     private Camera m_MainCamera;
     private int m_LastChunkIndex = -1;
     private int m_LastBuildingIndexLeft = -1;
     private int m_LastBuildingIndexRight = -1;
     private float m_LastChunkLength = 16f; // fallback pana la primul chunk spawnat
+    private int   m_CachedCoinMultiplier = 1;
+    private float m_LastSpeedForMultiplier = -1f;
+
+    [Header("Debug")]
+    [SerializeField] private int d_ActiveChunks;
+    [SerializeField] private int d_ActiveBuildings;
+    [SerializeField] private int d_ActiveGroundStrips;
 
     // Object pools
     private readonly Dictionary<GameObject, Queue<Chunk>> m_ChunkPool = new Dictionary<GameObject, Queue<Chunk>>();
@@ -46,19 +56,22 @@ public class LevelGenerator : MonoBehaviour
     {
         get
         {
-            int speedMultiplier;
-            if (moveSpeed >= 44f) speedMultiplier = 10;
-            else if (moveSpeed >= 40f) speedMultiplier = 9;
-            else if (moveSpeed >= 36f) speedMultiplier = 8;
-            else if (moveSpeed >= 32f) speedMultiplier = 7;
-            else if (moveSpeed >= 28f) speedMultiplier = 6;
-            else if (moveSpeed >= 24f) speedMultiplier = 5;
-            else if (moveSpeed >= 20f) speedMultiplier = 4;
-            else if (moveSpeed >= 16f) speedMultiplier = 3;
-            else if (moveSpeed >= 12f) speedMultiplier = 2;
-            else speedMultiplier = 1;
-
-            return speedMultiplier + RushEffect.ObstacleHitBonus;
+            // Recalculeaza doar cand moveSpeed s-a schimbat
+            if (moveSpeed != m_LastSpeedForMultiplier)
+            {
+                m_LastSpeedForMultiplier = moveSpeed;
+                if      (moveSpeed >= 44f) m_CachedCoinMultiplier = 10;
+                else if (moveSpeed >= 40f) m_CachedCoinMultiplier = 9;
+                else if (moveSpeed >= 36f) m_CachedCoinMultiplier = 8;
+                else if (moveSpeed >= 32f) m_CachedCoinMultiplier = 7;
+                else if (moveSpeed >= 28f) m_CachedCoinMultiplier = 6;
+                else if (moveSpeed >= 24f) m_CachedCoinMultiplier = 5;
+                else if (moveSpeed >= 20f) m_CachedCoinMultiplier = 4;
+                else if (moveSpeed >= 16f) m_CachedCoinMultiplier = 3;
+                else if (moveSpeed >= 12f) m_CachedCoinMultiplier = 2;
+                else                       m_CachedCoinMultiplier = 1;
+            }
+            return m_CachedCoinMultiplier + RushEffect.ObstacleHitBonus;
         }
     }
 
@@ -73,7 +86,11 @@ public class LevelGenerator : MonoBehaviour
     private void FixedUpdate()
     {
         MoveChunks();
+        d_ActiveChunks = m_Chunks.Count;
+        d_ActiveBuildings = m_Buildings.Count;
+        d_ActiveGroundStrips = m_GroundStrips.Count;
         MoveBuildings();
+        MoveGroundStrips();
     }
 
     public void SetObstacleDensity(float value) => obstacleDensity = Mathf.Clamp01(value);
@@ -114,6 +131,9 @@ public class LevelGenerator : MonoBehaviour
         m_LastBuildingIndexLeft = -1;
         m_LastBuildingIndexRight = -1;
 
+        foreach (var strip in m_GroundStrips) { if (strip != null) ReturnBuildingToPool(strip); }
+        m_GroundStrips.Clear();
+
         SpawnStartingChunks();
     }
 
@@ -138,6 +158,7 @@ public class LevelGenerator : MonoBehaviour
         m_LastChunkLength = chunk.Length;
 
         SpawnBuildingPair(spawnZ);
+        SpawnGroundStrip(spawnZ);
     }
 
     private void SpawnStartingChunks()
@@ -145,8 +166,9 @@ public class LevelGenerator : MonoBehaviour
         float spawnThreshold = m_MainCamera.transform.position.z + m_MainCamera.farClipPlane;
 
         do { SpawnChunk(); }
-        while (m_Chunks.Count < startingChunksAmount ||
-               m_Chunks[m_Chunks.Count - 1].transform.position.z + m_Chunks[m_Chunks.Count - 1].LocalMaxZ < spawnThreshold);
+        while (m_Chunks.Count < Mathf.Min(startingChunksAmount, maxChunks) ||
+               (m_Chunks.Count < maxChunks &&
+                m_Chunks[m_Chunks.Count - 1].transform.position.z + m_Chunks[m_Chunks.Count - 1].LocalMaxZ < spawnThreshold));
     }
 
     private void SpawnChunk()
@@ -171,6 +193,7 @@ public class LevelGenerator : MonoBehaviour
         m_LastChunkLength = chunk.Length;
 
         SpawnBuildingPair(spawnZ);
+        SpawnGroundStrip(spawnZ);
     }
 
     private void MoveChunks()
@@ -191,12 +214,13 @@ public class LevelGenerator : MonoBehaviour
             }
         }
 
-        // Spawneaza doar cand un chunk a fost scos, pana lantul depaseste far clip plane
+        // Spawneaza doar cand un chunk a fost scos, pana lantul depaseste far clip plane sau limita maxima
         if (needsRefill)
         {
             float spawnThreshold = cameraZ + m_MainCamera.farClipPlane;
-            while (m_Chunks.Count == 0 ||
-                   m_Chunks[m_Chunks.Count - 1].transform.position.z + m_Chunks[m_Chunks.Count - 1].LocalMaxZ < spawnThreshold)
+            while (m_Chunks.Count < maxChunks &&
+                   (m_Chunks.Count == 0 ||
+                    m_Chunks[m_Chunks.Count - 1].transform.position.z + m_Chunks[m_Chunks.Count - 1].LocalMaxZ < spawnThreshold))
                 SpawnChunk();
         }
     }
@@ -217,6 +241,8 @@ public class LevelGenerator : MonoBehaviour
 
     private void SpawnBuildingPair(float z)
     {
+        if (m_Buildings.Count >= maxBuildings) return;
+
         if (buildingChunkConfig == null)
         {
             Debug.LogWarning("LevelGenerator: BuildingChunkConfig nu este asignat.");
@@ -267,6 +293,30 @@ public class LevelGenerator : MonoBehaviour
         }
     }
 
+    // Spawneaza o fasie verde plata de-o parte si de alta a drumului, scalata pe lungimea chunk-ului
+    private void SpawnGroundStrip(float z)
+    {
+        if (buildingChunkConfig == null || buildingChunkConfig.groundStripPrefab == null) return;
+
+        float cx = buildingChunkConfig.groundStripCenterX;
+        float width = buildingChunkConfig.groundStripWidth;
+        float centerZ = z + m_LastChunkLength * 0.5f;
+
+        GameObject left = GetBuildingFromPool(
+            buildingChunkConfig.groundStripPrefab,
+            new Vector3(-cx, 0f, centerZ),
+            Quaternion.identity);
+        left.transform.localScale = new Vector3(width, 0.1f, m_LastChunkLength);
+        m_GroundStrips.Add(left);
+
+        GameObject right = GetBuildingFromPool(
+            buildingChunkConfig.groundStripPrefab,
+            new Vector3(cx, 0f, centerZ),
+            Quaternion.identity);
+        right.transform.localScale = new Vector3(width, 0.1f, m_LastChunkLength);
+        m_GroundStrips.Add(right);
+    }
+
     private void SpawnBuilding(float x, float yRotation, float z, GameObject prefab)
     {
         if (prefab == null)
@@ -298,6 +348,25 @@ public class LevelGenerator : MonoBehaviour
             {
                 m_Buildings.RemoveAt(i);
                 ReturnBuildingToPool(building);
+            }
+        }
+    }
+
+    private void MoveGroundStrips()
+    {
+        float cameraZ = m_MainCamera.transform.position.z;
+
+        for (int i = m_GroundStrips.Count - 1; i >= 0; i--)
+        {
+            GameObject strip = m_GroundStrips[i];
+            if (strip == null) { m_GroundStrips.RemoveAt(i); continue; }
+
+            strip.transform.position += Vector3.back * (moveSpeed * Time.deltaTime);
+
+            if (strip.transform.position.z <= cameraZ - m_LastChunkLength)
+            {
+                m_GroundStrips.RemoveAt(i);
+                ReturnBuildingToPool(strip);
             }
         }
     }
